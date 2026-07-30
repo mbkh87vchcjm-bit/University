@@ -1,2 +1,0 @@
-# University
-My IT Projects
