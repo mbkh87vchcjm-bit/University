@@ -10,8 +10,11 @@ class PdfService {
   static Future<Uint8List> generateInvoicePdf(Visit visit) async {
     final pdf = pw.Document();
 
-    final fontData = await PdfGoogleFonts.cairoRegular();
-    final fontBoldData = await PdfGoogleFonts.cairoBold();
+    final fontData = pw.Font.ttf(
+  await rootBundle.load('assets/fonts/Cairo-Regular.ttf'),
+);
+
+final fontBoldData = fontData;
 
     final currencyFormatter = intl.NumberFormat('#,##0', 'ar');
 
