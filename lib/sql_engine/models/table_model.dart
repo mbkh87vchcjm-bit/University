@@ -83,21 +83,36 @@ class CheckConstraint extends ConstraintModel {
   }) : super(name);
 }
 
+class StoredRow {
+  final int rowId;
+  final SqlRow values;
+
+  const StoredRow({
+    required this.rowId,
+    required this.values,
+  });
+}
+
 class TableModel {
   final String name;
   final String schema;
   final List<ColumnModel> columns;
   final List<ConstraintModel> constraints;
-  final List<SqlRow> rows;
+  final List<StoredRow> rows;
+  int _nextRowId;
 
   TableModel({
     required this.name,
     this.schema = 'dbo',
     required this.columns,
     List<ConstraintModel>? constraints,
-    List<SqlRow>? rows,
+    List<StoredRow>? rows,
+    int nextRowId = 1,
   })  : constraints = constraints ?? [],
-        rows = rows ?? [];
+        rows = rows ?? [],
+        _nextRowId = nextRowId;
+
+  int get nextRowId => _nextRowId++;
 }
 
 class SchemaModel {

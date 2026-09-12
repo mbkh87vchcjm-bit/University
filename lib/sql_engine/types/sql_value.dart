@@ -1,6 +1,6 @@
 import 'package:meta/meta.dart';
 
-/// Strongly-typed SQL Value abstraction hierarchy.
+/// Strongly-typed SQL Value abstraction hierarchy covering T-SQL data types.
 @immutable
 sealed class SqlValue {
   const SqlValue();
@@ -12,8 +12,13 @@ sealed class SqlValue {
   factory SqlValue.tinyInt(int value) = SqlTinyInt;
   factory SqlValue.decimal(String value) = SqlDecimal;
   factory SqlValue.float(double value) = SqlFloat;
-  factory SqlValue.string(String value) = SqlString;
-  factory SqlValue.boolean(bool value) = SqlBoolean;
+  factory SqlValue.varchar(String value) = SqlVarchar;
+  factory SqlValue.nvarchar(String value) = SqlNVarchar;
+  factory SqlValue.char(String value) = SqlChar;
+  factory SqlValue.nchar(String value) = SqlNChar;
+  factory SqlValue.bit(bool value) = SqlBit;
+  factory SqlValue.date(DateTime value) = SqlDate;
+  factory SqlValue.time(String value) = SqlTime;
   factory SqlValue.dateTime(DateTime value) = SqlDateTime;
 
   /// Returns the standard T-SQL literal string representation.
@@ -138,12 +143,12 @@ final class SqlFloat extends SqlValue {
   String toString() => value.toString();
 }
 
-final class SqlString extends SqlValue {
+final class SqlVarchar extends SqlValue {
   final String value;
-  const SqlString(this.value);
+  const SqlVarchar(this.value);
 
   @override
-  bool operator ==(Object other) => other is SqlString && other.value == value;
+  bool operator ==(Object other) => other is SqlVarchar && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
@@ -158,12 +163,72 @@ final class SqlString extends SqlValue {
   String toString() => value;
 }
 
-final class SqlBoolean extends SqlValue {
-  final bool value;
-  const SqlBoolean(this.value);
+final class SqlNVarchar extends SqlValue {
+  final String value;
+  const SqlNVarchar(this.value);
 
   @override
-  bool operator ==(Object other) => other is SqlBoolean && other.value == value;
+  bool operator ==(Object other) => other is SqlNVarchar && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() {
+    final escaped = value.replaceAll("'", "''");
+    return "N'$escaped'";
+  }
+
+  @override
+  String toString() => value;
+}
+
+final class SqlChar extends SqlValue {
+  final String value;
+  const SqlChar(this.value);
+
+  @override
+  bool operator ==(Object other) => other is SqlChar && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() {
+    final escaped = value.replaceAll("'", "''");
+    return "'$escaped'";
+  }
+
+  @override
+  String toString() => value;
+}
+
+final class SqlNChar extends SqlValue {
+  final String value;
+  const SqlNChar(this.value);
+
+  @override
+  bool operator ==(Object other) => other is SqlNChar && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() {
+    final escaped = value.replaceAll("'", "''");
+    return "N'$escaped'";
+  }
+
+  @override
+  String toString() => value;
+}
+
+final class SqlBit extends SqlValue {
+  final bool value;
+  const SqlBit(this.value);
+
+  @override
+  bool operator ==(Object other) => other is SqlBit && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
@@ -173,6 +238,43 @@ final class SqlBoolean extends SqlValue {
 
   @override
   String toString() => value ? '1' : '0';
+}
+
+final class SqlDate extends SqlValue {
+  final DateTime value;
+  const SqlDate(this.value);
+
+  @override
+  bool operator ==(Object other) => other is SqlDate && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() {
+    final formatted = "${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}";
+    return "'$formatted'";
+  }
+
+  @override
+  String toString() => toSqlLiteral();
+}
+
+final class SqlTime extends SqlValue {
+  final String value; // HH:mm:ss format
+  const SqlTime(this.value);
+
+  @override
+  bool operator ==(Object other) => other is SqlTime && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() => "'$value'";
+
+  @override
+  String toString() => value;
 }
 
 final class SqlDateTime extends SqlValue {

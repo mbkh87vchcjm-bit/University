@@ -1,36 +1,35 @@
 # Multi-PR Development Roadmap
 
 ## Strategy Overview
-Development proceeds incrementally across isolated Pull Requests. PR #5 is the final documentation and specification PR; PR #6 initiates physical code implementation in Dart & Flutter.
+Development proceeds incrementally across isolated Pull Requests. PR #5 is the Foundation & Architecture Correction PR establishing the pure Dart/Flutter engine structure; PR #6 builds the core SQL Engine.
 
 ---
 
 ## PR Sequence Plan
 
-### 📑 PR #5 (Final Spec) — Foundation & Architecture Correction
-- [x] Update `README.md` with official description, status legend, and project architecture.
-- [x] Align `docs/architecture.md` to standalone `lib/sql_engine/` module layout & dual DB strategy.
+### 📑 PR #5 (Current) — Foundation & Architecture Correction
+- [x] Update `README.md` with official description, status legend, and Flutter architecture.
+- [x] Align `docs/architecture.md` to standalone `lib/sql_engine/` Dart structure & dual DB strategy.
 - [x] Align `docs/sql-supported.md` with explicit status codes (🟢 Implemented, 🟡 Planned, 🔴 Unsupported).
-- [x] Update `docs/database-model.md` (`SqlValue`, `DatabaseStorage` abstraction, `ConstraintModel`, composite PK/FK).
-- [x] Update `docs/parser.md` (Batch Processor `GO`, Recursive Descent + Pratt Parser, complete AST nodes, `SqlError`).
+- [x] Update `docs/database-model.md` (`SqlValue`, `DatabaseStorage` abstraction, `ConstraintModel`, `StoredRow`).
+- [x] Update `docs/parser.md` (Batch Processor `GO`, Recursive Descent + Pratt Parser, AST nodes, `SqlError`).
 - [x] Categorize UI features in `docs/ui.md` (MVP vs Phase 2 vs Future).
 - [x] Define benchmark tests in `docs/testing.md` and detailed multi-PR roadmap in `docs/roadmap.md`.
+- [x] Implement core Dart foundation (`SqlValue`, `BatchProcessor`, `SqlError`, `DatabaseStorage`, `TableModel`).
 
 ---
 
-### 🧱 PR #6 — Flutter App & Standalone SQL Engine Setup
-- Create Flutter project structure (`lib/app/`, `lib/core/`, `lib/features/`, `lib/sql_engine/`).
+### 🧱 PR #6 — Core Dart SQL Engine Infrastructure
+- Implement `ExecutionContext`, `EngineResult`, and core engine interfaces in `lib/sql_engine/`.
 - Ensure `lib/sql_engine/` compiles and executes unit tests independently on Dart VM without Flutter dependencies.
-- Implement `SqlEngine` package interfaces, `SqlError` diagnostics, and initial `BatchProcessor`.
-- Basic Home screen UI scaffold (`lib/features/home/home_screen.dart`).
-- Verify unit tests (`BatchProcessorTest`, `SqlValueTest`, `widget_test.dart`).
+- Setup core engine execution state and error handling pipelines.
 
 ---
 
 ### 🔤 PR #7 — Complete Lexer & Batch Processor
 - Complete Lexer implementation for T-SQL keywords, operators, identifiers, and literals.
 - String escaping support (`'Ali''s'`) and bracket identifiers (`[Name]`).
-- `BatchProcessor` comment, string delimiter, and empty batch handling.
+- Extended `BatchProcessor` comment, string delimiter, empty/consecutive batch handling.
 - `BatchProcessorTest` & `LexerTest` suite.
 
 ---
@@ -43,7 +42,7 @@ Development proceeds incrementally across isolated Pull Requests. PR #5 is the f
 
 ---
 
-### 💾 PR #9 — Database & Table DDL Execution
+### 💾 PR #9 — Database & Table Storage Implementation
 - `DatabaseStorage` engine implementation and local document persistent store.
 - `CREATE DATABASE`, `DROP DATABASE`, `USE`.
 - `CREATE TABLE`, `DROP TABLE`.
@@ -60,7 +59,7 @@ Development proceeds incrementally across isolated Pull Requests. PR #5 is the f
 
 ### 🔍 PR #11 — Filtering & Modifications (WHERE, UPDATE, DELETE)
 - Expression evaluation in `WHERE` clauses via `ExpressionEvaluator`.
-- `UPDATE` and `DELETE` execution logic.
+- `UPDATE` and `DELETE` execution logic operating on stable `rowId`s.
 - Comparison and logical operators (`LIKE`, `IN`, `BETWEEN`, `IS NULL`).
 
 ---
@@ -72,7 +71,7 @@ Development proceeds incrementally across isolated Pull Requests. PR #5 is the f
 
 ---
 
-### 📊 PR #13 — Result Sorting & Manipulation
+### 📊 PR #13 — Result Sorting & Manipulation (MVP Complete)
 - `ORDER BY (ASC / DESC)` implementation.
 - `DISTINCT` row deduplication.
 - `TOP (N)` limiting.

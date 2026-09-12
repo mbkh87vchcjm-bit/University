@@ -29,11 +29,12 @@ void main() {
       expect(dec1.toSqlLiteral(), equals('123.456'));
     });
 
-    test('SqlString escaping in toSqlLiteral', () {
-      final str = SqlString("Ali's");
+    test('SqlVarchar and SqlNVarchar escaping in toSqlLiteral', () {
+      final strVarchar = SqlValue.varchar("Ali's");
+      final strNVarchar = SqlValue.nvarchar("Ali's");
 
-      expect(str.value, equals("Ali's"));
-      expect(str.toSqlLiteral(), equals("'Ali''s'"));
+      expect(strVarchar.toSqlLiteral(), equals("'Ali''s'"));
+      expect(strNVarchar.toSqlLiteral(), equals("N'Ali''s'"));
     });
   });
 }

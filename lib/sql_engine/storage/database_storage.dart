@@ -13,9 +13,9 @@ abstract interface class DatabaseStorage {
   List<String> listTables(String dbName, {String schema = 'dbo'});
 
   void insertRows(String dbName, String schema, String tableName, List<SqlRow> rows);
-  List<SqlRow> selectRows(String dbName, String schema, String tableName);
-  int updateRows(String dbName, String schema, String tableName, List<SqlRow> targetRows, Map<String, SqlValue> updates);
-  int deleteRows(String dbName, String schema, String tableName, List<SqlRow> targetRows);
+  List<StoredRow> selectStoredRows(String dbName, String schema, String tableName);
+  int updateRowsByRowId(String dbName, String schema, String tableName, List<int> targetRowIds, Map<String, SqlValue> updates);
+  int deleteRowsByRowId(String dbName, String schema, String tableName, List<int> targetRowIds);
 
   Future<void> persistState();
   Future<void> restoreState();
