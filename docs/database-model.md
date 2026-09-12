@@ -1,11 +1,11 @@
 # Engine Storage & Database Data Models
 
 ## Overview
-SQL Student Studio separates application metadata models (stored in local SQLite / local storage) from student database engine models (managed via `DatabaseStorage` and `Persistent Engine Store`).
+SQL Student Studio separates application metadata models (stored in local SQLite / local app storage) from student database engine models (managed via `DatabaseStorage` and `Persistent Engine Store`).
 
 ---
 
-## 1. Application Metadata Models (Dart)
+## 1. Application Metadata Models (`lib/core/` / App Storage)
 
 The application layer manages project workspaces, saved scripts, and query history:
 
@@ -81,8 +81,13 @@ sealed class SqlValue {
   factory SqlValue.tinyInt(int value) = SqlTinyInt;
   factory SqlValue.decimal(String value) = SqlDecimal;
   factory SqlValue.float(double value) = SqlFloat;
-  factory SqlValue.string(String value) = SqlString;
-  factory SqlValue.boolean(bool value) = SqlBoolean;
+  factory SqlValue.varchar(String value) = SqlVarchar;
+  factory SqlValue.nvarchar(String value) = SqlNVarchar;
+  factory SqlValue.char(String value) = SqlChar;
+  factory SqlValue.nchar(String value) = SqlNChar;
+  factory SqlValue.bit(bool value) = SqlBit;
+  factory SqlValue.date(DateTime value) = SqlDate;
+  factory SqlValue.time(String value) = SqlTime;
   factory SqlValue.dateTime(DateTime value) = SqlDateTime;
 
   String toSqlLiteral();
@@ -94,9 +99,9 @@ typedef SqlRow = Map<String, SqlValue>;
 ---
 
 ### Storage Interface Abstraction (`DatabaseStorage`)
-`DatabaseStorage` provides clean query and raw mutation methods for the Engine.
+`DatabaseStorage` provides clean query and row-mutation methods by stable `rowId`.
 
-**Crucial Architecture Requirement**: The `Executor` and `ExpressionEvaluator` components are exclusively responsible for parsing, evaluating `WHERE` clauses, evaluating predicates, and calculating update values. `DatabaseStorage` does **not** accept or execute Dart lambdas, predicates, or evaluation logic; it purely accepts evaluated row subsets provided directly by the Executor.
+**Crucial Architecture Requirement**: The `Executor` and `ExpressionEvaluator` components are exclusively responsible for parsing, evaluating `WHERE` clauses, evaluating predicates, and calculating update values. `DatabaseStorage` does **not** accept or execute Dart lambdas, predicates, or evaluation logic; it purely accepts evaluated row IDs provided directly by the Executor.
 
 ```dart
 abstract interface class DatabaseStorage {
@@ -111,9 +116,9 @@ abstract interface class DatabaseStorage {
   List<String> listTables(String dbName, {String schema = 'dbo'});
 
   void insertRows(String dbName, String schema, String tableName, List<SqlRow> rows);
-  List<SqlRow> selectRows(String dbName, String schema, String tableName);
-  int updateRows(String dbName, String schema, String tableName, List<SqlRow> targetRows, Map<String, SqlValue> updates);
-  int deleteRows(String dbName, String schema, String tableName, List<SqlRow> targetRows);
+  List<StoredRow> selectStoredRows(String dbName, String schema, String tableName);
+  int updateRowsByRowId(String dbName, String schema, String tableName, List<int> targetRowIds, Map<String, SqlValue> updates);
+  int deleteRowsByRowId(String dbName, String schema, String tableName, List<int> targetRowIds);
 
   Future<void> persistState();
   Future<void> restoreState();
@@ -122,43 +127,24 @@ abstract interface class DatabaseStorage {
 
 ---
 
-### Schema, Table & Constraint Models
-
-#### Single Source of Truth for DEFAULT Constraints
-Default values are specified exclusively via `DefaultConstraint(column, expressionSql)`. To prevent duplicate or conflicting definitions, `ColumnModel` does not contain a raw `defaultValue` string field.
+### Schema, Table, Column & Constraint Models
 
 ```dart
-class DatabaseModel {
-  final String name;
-  final Map<String, SchemaModel> schemas;
-
-  DatabaseModel({required this.name, Map<String, SchemaModel>? schemas})
-      : schemas = schemas ?? {'dbo': SchemaModel(name: 'dbo')};
-}
-
-class SchemaModel {
-  final String name;
-  final Map<String, TableModel> tables;
-
-  SchemaModel({required this.name, Map<String, TableModel>? tables})
-      : tables = tables ?? {};
-}
-
-class TableModel {
-  final String name;
-  final String schema;
-  final List<ColumnModel> columns;
-  final List<ConstraintModel> constraints;
-  final List<SqlRow> rows;
-
-  TableModel({
-    required this.name,
-    this.schema = 'dbo',
-    required this.columns,
-    List<ConstraintModel>? constraints,
-    List<SqlRow>? rows,
-  })  : constraints = constraints ?? [],
-        rows = rows ?? [];
+enum SqlDataType {
+  intType,
+  bigIntType,
+  smallIntType,
+  tinyIntType,
+  decimalType,
+  floatType,
+  varcharType,
+  nvarcharType,
+  charType,
+  ncharType,
+  dateType,
+  timeType,
+  dateTimeType,
+  bitType,
 }
 
 class ColumnModel {
@@ -209,7 +195,7 @@ class UniqueConstraint extends ConstraintModel {
 
 class DefaultConstraint extends ConstraintModel {
   final String column;
-  final String expressionSql; // Default expression AST
+  final String expressionSql; // Default AST expression string
 
   const DefaultConstraint({
     String? name,
@@ -219,12 +205,60 @@ class DefaultConstraint extends ConstraintModel {
 }
 
 class CheckConstraint extends ConstraintModel {
-  final String expressionSql; // Check expression AST
+  final String expressionSql; // Check AST expression string (Execution planned Phase 3)
 
   const CheckConstraint({
     String? name,
     required this.expressionSql,
   }) : super(name);
+}
+
+class StoredRow {
+  final int rowId;
+  final SqlRow values;
+
+  const StoredRow({
+    required this.rowId,
+    required this.values,
+  });
+}
+
+class TableModel {
+  final String name;
+  final String schema;
+  final List<ColumnModel> columns;
+  final List<ConstraintModel> constraints;
+  final List<StoredRow> rows;
+  int _nextRowId;
+
+  TableModel({
+    required this.name,
+    this.schema = 'dbo',
+    required this.columns,
+    List<ConstraintModel>? constraints,
+    List<StoredRow>? rows,
+    int nextRowId = 1,
+  })  : constraints = constraints ?? [],
+        rows = rows ?? [],
+        _nextRowId = nextRowId;
+
+  int allocateRowId() => _nextRowId++;
+}
+
+class SchemaModel {
+  final String name;
+  final Map<String, TableModel> tables;
+
+  SchemaModel({required this.name, Map<String, TableModel>? tables})
+      : tables = tables ?? {};
+}
+
+class DatabaseModel {
+  final String name;
+  final Map<String, SchemaModel> schemas;
+
+  DatabaseModel({required this.name, Map<String, SchemaModel>? schemas})
+      : schemas = schemas ?? {'dbo': SchemaModel(name: 'dbo')};
 }
 ```
 
@@ -232,5 +266,5 @@ class CheckConstraint extends ConstraintModel {
 
 ## 3. Persistence Strategy for Student Database Engine
 To ensure student databases survive application restarts:
-- Student database instances, schemas, tables, constraints, and rows are stored in JSON/binary format inside the application's local document storage directory.
+- Student database instances, schemas, tables, constraints, and rows are stored in JSON/binary format inside the application's local document storage directory (`student_db/`).
 - Calling `persistState()` serializes `DatabaseStorage` state to disk; calling `restoreState()` loads it back into memory upon app launch.

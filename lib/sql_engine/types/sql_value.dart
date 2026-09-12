@@ -5,21 +5,21 @@ import 'package:meta/meta.dart';
 sealed class SqlValue {
   const SqlValue();
 
-  factory SqlValue.nullValue() = SqlNull;
-  factory SqlValue.integer(int value) = SqlInt;
-  factory SqlValue.bigInt(int value) = SqlBigInt;
-  factory SqlValue.smallInt(int value) = SqlSmallInt;
-  factory SqlValue.tinyInt(int value) = SqlTinyInt;
-  factory SqlValue.decimal(String value) = SqlDecimal;
-  factory SqlValue.float(double value) = SqlFloat;
-  factory SqlValue.varchar(String value) = SqlVarchar;
-  factory SqlValue.nvarchar(String value) = SqlNVarchar;
-  factory SqlValue.char(String value) = SqlChar;
-  factory SqlValue.nchar(String value) = SqlNChar;
-  factory SqlValue.bit(bool value) = SqlBit;
-  factory SqlValue.date(DateTime value) = SqlDate;
-  factory SqlValue.time(String value) = SqlTime;
-  factory SqlValue.dateTime(DateTime value) = SqlDateTime;
+  const factory SqlValue.nullValue() = SqlNull;
+  const factory SqlValue.integer(int value) = SqlInt;
+  const factory SqlValue.bigInt(int value) = SqlBigInt;
+  const factory SqlValue.smallInt(int value) = SqlSmallInt;
+  const factory SqlValue.tinyInt(int value) = SqlTinyInt;
+  const factory SqlValue.decimal(String value) = SqlDecimal;
+  const factory SqlValue.float(double value) = SqlFloat;
+  const factory SqlValue.varchar(String value) = SqlVarchar;
+  const factory SqlValue.nvarchar(String value) = SqlNVarchar;
+  const factory SqlValue.char(String value) = SqlChar;
+  const factory SqlValue.nchar(String value) = SqlNChar;
+  const factory SqlValue.bit(bool value) = SqlBit;
+  const factory SqlValue.date(DateTime value) = SqlDate;
+  const factory SqlValue.time(String value) = SqlTime;
+  const factory SqlValue.dateTime(DateTime value) = SqlDateTime;
 
   /// Returns the standard T-SQL literal string representation.
   String toSqlLiteral();

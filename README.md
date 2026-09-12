@@ -1,7 +1,7 @@
 # SQL Student Studio
 
-> **SQL Server Learning Environment on Android**
-> An offline-first database development environment designed for IT and Computer Science students without a PC.
+> **T-SQL Educational Environment for Android**
+> An offline-first database development environment with an SSMS-inspired interface designed for IT and Computer Science students without a PC.
 
 ---
 
@@ -16,7 +16,7 @@
 ## ✨ Feature Specification Scope
 
 ### 🟢 MVP Target Scope
-*Note: These are overall MVP goals, not necessarily implemented in the initial PR.*
+*Note: These are overall MVP goals, not necessarily implemented in the initial foundation PR.*
 
 - 📁 **Database Explorer**: Tree view navigation for Databases and Tables (`dbo` schema).
 - 📝 **Query Editor**: Monospace SQL editor with line numbers, basic syntax highlighting, and execution controls.
@@ -38,7 +38,7 @@
 - **Primary Language & Framework**: Dart & Flutter (Cross-platform mobile application)
 - **UI Architecture**: Material 3 & Decoupled Features layout (`lib/features/`, `lib/app/`)
 - **App Metadata Storage**: SQLite / Local storage for projects, saved scripts, history, settings.
-- **SQL Execution Engine**: Pure Dart standalone engine (`lib/sql_engine/` containing `lexer/`, `parser/`, `ast/`, `validator/`, `executor/`, `storage/`, `types/`, `constraints/`, `errors/`)
+- **SQL Execution Engine**: Pure Dart standalone engine (`lib/sql_engine/` containing `lexer/`, `parser/`, `ast/`, `validator/`, `executor/`, `storage/`, `types/`, `models/`, `errors/`)
 
 ```
 Flutter Application Layer

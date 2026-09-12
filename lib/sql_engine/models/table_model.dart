@@ -112,7 +112,7 @@ class TableModel {
         rows = rows ?? [],
         _nextRowId = nextRowId;
 
-  int get nextRowId => _nextRowId++;
+  int allocateRowId() => _nextRowId++;
 }
 
 class SchemaModel {
