@@ -5,90 +5,52 @@ SQL Student Studio separates application metadata models (stored in local SQLite
 
 ---
 
-## 1. Application Metadata Models (`lib/core/` / App Storage)
+## 1. T-SQL Data Type Specifications & Bounds
 
-The application layer manages project workspaces, saved scripts, and query history:
+To ensure educational alignment with Microsoft SQL Server standards, all engine data types enforce explicit bounds during validation:
 
-```dart
-class ProjectModel {
-  final String id;
-  final String name;
-  final String? description;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  const ProjectModel({
-    required this.id,
-    required this.name,
-    this.description,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-}
-
-class ScriptFileModel {
-  final String id;
-  final String projectId;
-  final String fileName;
-  final String content;
-  final DateTime updatedAt;
-
-  const ScriptFileModel({
-    required this.id,
-    required this.projectId,
-    required this.fileName,
-    required this.content,
-    required this.updatedAt,
-  });
-}
-
-class QueryHistoryModel {
-  final int id;
-  final String projectId;
-  final String queryText;
-  final DateTime executedAt;
-  final int executionDurationMs;
-  final bool isSuccess;
-  final String? errorMessage;
-
-  const QueryHistoryModel({
-    required this.id,
-    required this.projectId,
-    required this.queryText,
-    required this.executedAt,
-    required this.executionDurationMs,
-    required this.isSuccess,
-    this.errorMessage,
-  });
-}
-```
+| T-SQL Data Type | Underlying Engine Class | Bounds / Constraints |
+|---|---|---|
+| `INT` | `SqlInt` | Signed 32-bit integer (-2,147,483,648 to 2,147,483,647) |
+| `BIGINT` | `SqlBigInt` | Signed 64-bit integer (-9,223,372,036,854,775,808 to 9,223,372,036,854,775,807) |
+| `SMALLINT` | `SqlSmallInt` | Signed 16-bit integer (-32,768 to 32,767) |
+| `TINYINT` | `SqlTinyInt` | Unsigned 8-bit integer (0 to 255) |
+| `DECIMAL(p, s)` | `SqlDecimal` | Canonical exact string representation with specified precision `p` and scale `s` |
+| `FLOAT` | `SqlFloat` | 64-bit IEEE 754 floating point (NaN / Infinity values rejected) |
+| `VARCHAR(n)` | `SqlVarchar` | Single-byte character string up to length `n` |
+| `NVARCHAR(n)` | `SqlNVarchar` | Unicode string up to length `n` |
+| `CHAR(n)` | `SqlChar` | Fixed-length single-byte string of length `n` |
+| `NCHAR(n)` | `SqlNChar` | Fixed-length Unicode string of length `n` |
+| `BIT` | `SqlBit` | Boolean flag (0 or 1) |
+| `DATE` | `SqlDate` | Date only (`YYYY-MM-DD`, zeroed time component) |
+| `TIME` | `SqlTime` | Time string (`HH:mm:ss` validation format) |
+| `DATETIME` | `SqlDateTime` | Date and time ISO-8601 string representation |
 
 ---
 
-## 2. Student Database Engine Models (`lib/sql_engine/`)
+## 2. Strongly-Typed Value Abstraction (`SqlValue`)
 
-### Strongly-Typed Value Abstraction (`SqlValue`)
-To prevent type-erasure issues with comparison, sorting, equality, aggregations, and NULL handling, all engine values strictly implement `SqlValue`:
+All engine value instances strictly inherit from `SqlValue`:
 
 ```dart
 sealed class SqlValue {
   const SqlValue();
 
-  factory SqlValue.nullValue() = SqlNull;
-  factory SqlValue.integer(int value) = SqlInt;
-  factory SqlValue.bigInt(int value) = SqlBigInt;
-  factory SqlValue.smallInt(int value) = SqlSmallInt;
-  factory SqlValue.tinyInt(int value) = SqlTinyInt;
-  factory SqlValue.decimal(String value) = SqlDecimal;
-  factory SqlValue.float(double value) = SqlFloat;
-  factory SqlValue.varchar(String value) = SqlVarchar;
-  factory SqlValue.nvarchar(String value) = SqlNVarchar;
-  factory SqlValue.char(String value) = SqlChar;
-  factory SqlValue.nchar(String value) = SqlNChar;
-  factory SqlValue.bit(bool value) = SqlBit;
-  factory SqlValue.date(DateTime value) = SqlDate;
-  factory SqlValue.time(String value) = SqlTime;
-  factory SqlValue.dateTime(DateTime value) = SqlDateTime;
+  const factory SqlValue.nullValue() = SqlNull;
+  const factory SqlValue.integer(int value) = SqlInt;
+  const factory SqlValue.bigInt(int value) = SqlBigInt;
+  const factory SqlValue.smallInt(int value) = SqlSmallInt;
+  const factory SqlValue.tinyInt(int value) = SqlTinyInt;
+  const factory SqlValue.decimal(String value) = SqlDecimal;
+  const factory SqlValue.float(double value) = SqlFloat;
+  const factory SqlValue.varchar(String value) = SqlVarchar;
+  const factory SqlValue.nvarchar(String value) = SqlNVarchar;
+  const factory SqlValue.char(String value) = SqlChar;
+  const factory SqlValue.nchar(String value) = SqlNChar;
+  const factory SqlValue.bit(bool value) = SqlBit;
+  const factory SqlValue.date(DateTime value) = SqlDate;
+  const factory SqlValue.time(String value) = SqlTime;
+  const factory SqlValue.dateTime(DateTime value) = SqlDateTime;
 
   String toSqlLiteral();
 }
@@ -98,10 +60,9 @@ typedef SqlRow = Map<String, SqlValue>;
 
 ---
 
-### Storage Interface Abstraction (`DatabaseStorage`)
-`DatabaseStorage` provides clean query and row-mutation methods by stable `rowId`.
+## 3. Storage Interface Abstraction (`DatabaseStorage`)
 
-**Crucial Architecture Requirement**: The `Executor` and `ExpressionEvaluator` components are exclusively responsible for parsing, evaluating `WHERE` clauses, evaluating predicates, and calculating update values. `DatabaseStorage` does **not** accept or execute Dart lambdas, predicates, or evaluation logic; it purely accepts evaluated row IDs provided directly by the Executor.
+`DatabaseStorage` provides clean query and row-mutation methods by stable `rowId`:
 
 ```dart
 abstract interface class DatabaseStorage {
@@ -127,92 +88,9 @@ abstract interface class DatabaseStorage {
 
 ---
 
-### Schema, Table, Column & Constraint Models
+## 4. Schema, Table, Column & Constraint Models
 
 ```dart
-enum SqlDataType {
-  intType,
-  bigIntType,
-  smallIntType,
-  tinyIntType,
-  decimalType,
-  floatType,
-  varcharType,
-  nvarcharType,
-  charType,
-  ncharType,
-  dateType,
-  timeType,
-  dateTimeType,
-  bitType,
-}
-
-class ColumnModel {
-  final String name;
-  final SqlDataType dataType;
-  final bool isNullable;
-  final bool isIdentity;
-
-  const ColumnModel({
-    required this.name,
-    required this.dataType,
-    this.isNullable = true,
-    this.isIdentity = false,
-  });
-}
-
-sealed class ConstraintModel {
-  final String? name;
-  const ConstraintModel(this.name);
-}
-
-class PrimaryKeyConstraint extends ConstraintModel {
-  final List<String> columns;
-  const PrimaryKeyConstraint({String? name, required this.columns}) : super(name);
-}
-
-class ForeignKeyConstraint extends ConstraintModel {
-  final List<String> columns;
-  final String referencedTable;
-  final List<String> referencedColumns;
-
-  ForeignKeyConstraint({
-    String? name,
-    required this.columns,
-    required this.referencedTable,
-    required this.referencedColumns,
-  }) : super(name) {
-    if (columns.length != referencedColumns.length) {
-      throw ArgumentError('Foreign key source and referenced column counts must match.');
-    }
-  }
-}
-
-class UniqueConstraint extends ConstraintModel {
-  final List<String> columns;
-  const UniqueConstraint({String? name, required this.columns}) : super(name);
-}
-
-class DefaultConstraint extends ConstraintModel {
-  final String column;
-  final String expressionSql; // Default AST expression string
-
-  const DefaultConstraint({
-    String? name,
-    required this.column,
-    required this.expressionSql,
-  }) : super(name);
-}
-
-class CheckConstraint extends ConstraintModel {
-  final String expressionSql; // Check AST expression string (Execution planned Phase 3)
-
-  const CheckConstraint({
-    String? name,
-    required this.expressionSql,
-  }) : super(name);
-}
-
 class StoredRow {
   final int rowId;
   final SqlRow values;
@@ -244,27 +122,11 @@ class TableModel {
 
   int allocateRowId() => _nextRowId++;
 }
-
-class SchemaModel {
-  final String name;
-  final Map<String, TableModel> tables;
-
-  SchemaModel({required this.name, Map<String, TableModel>? tables})
-      : tables = tables ?? {};
-}
-
-class DatabaseModel {
-  final String name;
-  final Map<String, SchemaModel> schemas;
-
-  DatabaseModel({required this.name, Map<String, SchemaModel>? schemas})
-      : schemas = schemas ?? {'dbo': SchemaModel(name: 'dbo')};
-}
 ```
 
 ---
 
-## 3. Persistence Strategy for Student Database Engine
+## 5. Persistence Strategy for Student Database Engine
 To ensure student databases survive application restarts:
-- Student database instances, schemas, tables, constraints, and rows are stored in JSON/binary format inside the application's local document storage directory (`student_db/`).
-- Calling `persistState()` serializes `DatabaseStorage` state to disk; calling `restoreState()` loads it back into memory upon app launch.
+- Student database instances, schemas, tables, constraints, and rows are serialized inside the application's local document storage directory (`student_db/`).
+- Calling `persistState()` flushes `DatabaseStorage` state to disk; calling `restoreState()` reloads it into memory upon app launch.

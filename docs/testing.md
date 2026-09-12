@@ -1,7 +1,10 @@
 # Testing Strategy & Validation Benchmark
 
 ## Overview
-SQL Student Studio emphasizes rigorous testing of the SQL Engine separately from Flutter UI components inside the standalone `lib/sql_engine/` structure.
+SQL Student Studio categorizes tests into distinct tiers:
+1. **Foundation Tests (Implemented in PR #5)**: Validates `SqlValue` types, literal formatting, `BatchProcessor` GO pre-lexer splitting, and `TableModel` row ID allocation.
+2. **Core Engine Tests (Planned PR #6–#12)**: Validates Lexer tokenization, Parser AST generation, Semantic Validation, Expression Evaluation, and Constraint checking.
+3. **MVP Integration & Benchmark Tests (Planned PR #10–#13)**: End-to-end execution of T-SQL scripts.
 
 ---
 
@@ -10,33 +13,28 @@ SQL Student Studio emphasizes rigorous testing of the SQL Engine separately from
 ```
 test/
 ├── sql_engine/
-│   ├── batch_processor_test.dart   # GO batch delimiter, string, comment & empty batch tests
-│   ├── lexer_test.dart             # Tokenization, string escaping ('Ali''s'), bracket identifiers
-│   ├── parser_test.dart            # AST parsing & Golden AST verification
-│   ├── validator_test.dart         # Semantic, schema & case-insensitivity validation
-│   ├── executor_test.dart          # Engine execution & result verification
-│   ├── constraint_test.dart        # Single/Composite PK, FK, Unique, Default, Nullability tests
-│   ├── storage_test.dart           # DatabaseStorage & Persistent Engine Store tests
-│   └── error_test.dart             # SqlError positioning & suggestion tests
+│   ├── batch_processor_test.dart   # GO batch delimiter, string, comment & empty batch tests (Implemented)
+│   ├── sql_value_test.dart         # SqlValue formatting & quote escaping tests (Implemented)
+│   ├── table_model_test.dart       # TableModel rowId allocation & FK validation tests (Implemented)
+│   ├── lexer_test.dart             # Tokenization, string escaping ('Ali''s'), bracket identifiers (Planned PR #7)
+│   ├── parser_test.dart            # AST parsing & Golden AST verification (Planned PR #8)
+│   ├── validator_test.dart         # Semantic, schema & case-insensitivity validation (Planned PR #9)
+│   ├── executor_test.dart          # Engine execution & result verification (Planned PR #10)
+│   └── constraint_test.dart        # Single/Composite PK, FK, Unique, Default, Nullability tests (Planned PR #12)
 │
-└── widget_test.dart                # HomeScreen and App UI widget tests
+└── widget_test.dart                # HomeScreen and App UI widget tests (Implemented)
 ```
 
 ---
 
-## Result Terminology Assertions
-
-To distinguish row counts across query types:
-- **`SELECT` Queries**: Assert `Returned rows: N` (e.g., `Returned rows: 2`).
-- **`INSERT` Queries**: Assert `Affected rows: N` (e.g., `Affected rows: 2`).
-- **`UPDATE` Queries**: Assert `Affected rows: N` (e.g., `Affected rows: 1`).
-- **`DELETE` Queries**: Assert `Affected rows: N` (e.g., `Affected rows: 1`).
+## Foundation Test Coverage (PR #5 Implemented)
+- **`BatchProcessor` Tests**: Validates mixed-case `GO` delimiters, empty/consecutive `GO`s, CRLF line endings, and string/comment exclusion (`SELECT 'GO';` or `-- GO`).
+- **`SqlValue` Tests**: Validates canonical string decimals, number ranges (`SqlInt`, `SqlBigInt`, `SqlSmallInt`, `SqlTinyInt`), quote escaping (`'Ali''s'`), and `SqlDate` formatting.
+- **`TableModel` Tests**: Validates `allocateRowId()` sequence incrementing and `ForeignKeyConstraint` column count mismatch exceptions.
 
 ---
 
-## Essential Benchmark Test Flow
-
-Every build must pass the core end-to-end execution benchmark test flow:
+## Essential Benchmark Test Flow (Planned MVP PR #10)
 
 ```sql
 CREATE DATABASE University;
@@ -69,61 +67,15 @@ GO
 1. `CREATE DATABASE` successfully registers database in `DatabaseStorage`.
 2. `USE` changes active engine context to `University`.
 3. `CREATE TABLE` registers `NOT NULL` and `PRIMARY KEY` constraints.
-4. `INSERT INTO` creates 2 records (`Affected rows: 2`). Duplicate primary key insertion throws `CONSTRAINT_ERROR`.
+4. `INSERT INTO` creates 2 records (`Affected rows: 2`).
 5. `SELECT` returns filtered rows sorted by `Name` (`Returned rows: 2`).
 
 ---
 
-## Essential Core Engine Test Cases
+## Type Mismatch & Statement Atomicity Test Specification
 
-### 1. NULL Handling Test
-- Validates insertion, selection, and predicate evaluation (`IS NULL`, `IS NOT NULL`, equality comparisons) for `SqlValue.nullValue()`.
-
-### 2. Batch Processor Edge Cases
-- Empty batch strings or multiple consecutive `GO` tokens execute cleanly without error.
-- `SELECT 'GO';` -> Literal string `GO` is preserved and not split.
-- `-- GO` or `/* GO */` -> Commented `GO` is ignored as a batch delimiter.
-
-### 3. Composite Primary Key Enforcement
-- Verifies that composite primary keys (`PRIMARY KEY (CourseID, StudentID)`) allow matching individual IDs while rejecting duplicate combined pairs.
-
-### 4. Composite Foreign Key Validation
-- Ensures foreign key definitions validate that source column count matches referenced column count (`columns.length == referencedColumns.length`).
-
-### 5. DEFAULT Constraint Evaluation
-- Verifies that when a column with a `DefaultConstraint` is omitted from the `INSERT INTO` column list, the evaluated default expression is automatically supplied.
-
-### 6. Type Mismatch & Statement Atomicity
-- Verifies type error detection:
 ```sql
 INSERT INTO Students (ID, Name, Age)
 VALUES ('invalid', 'Ahmed', 20);
 ```
 - **Atomicity Assertion**: A failed `INSERT` statement must abort immediately with a `typeError` category `SqlError` and leave zero partial row mutations in `DatabaseStorage`.
-
----
-
-## Golden AST Test Specification (Dart)
-Parser tests must include Golden AST verification comparing parsed output against explicit AST data structures:
-
-```dart
-test('testSelectStatementGoldenAst', () {
-  const sql = "SELECT ID, Name FROM Students WHERE Age >= 20;";
-  final ast = Parser(Lexer(sql).tokenize()).parseStatement();
-
-  final expectedAst = SelectStatement(
-    columns: const [
-      SelectColumn.simple(ColumnReference(columnName: 'ID')),
-      SelectColumn.simple(ColumnReference(columnName: 'Name')),
-    ],
-    fromTable: const TableReference(schema: 'dbo', table: 'Students'),
-    whereClause: BinaryExpression(
-      left: const ColumnExpression('Age'),
-      operator: BinaryOperator.greaterThanOrEqual,
-      right: LiteralExpression(SqlValue.integer(20)),
-    ),
-  );
-
-  expect(ast, equals(expectedAst));
-});
-```
