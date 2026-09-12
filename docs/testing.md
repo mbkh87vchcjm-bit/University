@@ -9,7 +9,7 @@ SQL Student Studio emphasizes rigorous testing of the SQL Engine separately from
 
 ```
 sqlengine/src/test/kotlin/com/sqlstudentstudio/sqlengine/
-├── BatchProcessorTest.kt   # GO batch delimiter, string & comment tests
+├── BatchProcessorTest.kt   # GO batch delimiter, string, comment & empty batch tests
 ├── LexerTest.kt            # Tokenization, string escaping ('Ali''s'), bracket identifiers
 ├── ParserTest.kt           # AST parsing & Golden AST verification
 ├── AstTest.kt              # AST node structure & mapping
@@ -70,9 +70,38 @@ GO
 ### Required Test Assertions:
 1. `CREATE DATABASE` successfully registers database in `DatabaseStorage`.
 2. `USE` changes active engine context to `University`.
-3. `CREATE TABLE` enforces non-null constraints and primary key index.
+3. `CREATE TABLE` registers `NOT NULL` and `PRIMARY KEY` constraints.
 4. `INSERT INTO` creates 2 records (`Affected rows: 2`). Duplicate primary key insertion throws `CONSTRAINT_ERROR`.
 5. `SELECT` returns filtered rows sorted by `Name` (`Returned rows: 2`).
+
+---
+
+## Essential Core Engine Test Cases
+
+### 1. NULL Handling Test
+- Validates insertion, selection, and predicate evaluation (`IS NULL`, `IS NOT NULL`, equality comparisons) for `SqlValue.Null`.
+
+### 2. Batch Processor Edge Cases
+- Empty batch strings or multiple consecutive `GO` tokens execute cleanly without error.
+- `SELECT 'GO';` -> Literal string `GO` is preserved and not split.
+- `-- GO` or `/* GO */` -> Commented `GO` is ignored as a batch delimiter.
+
+### 3. Composite Primary Key Enforcement
+- Verifies that composite primary keys (`PRIMARY KEY (CourseID, StudentID)`) allow matching individual IDs while rejecting duplicate combined pairs.
+
+### 4. Composite Foreign Key Validation
+- Ensures foreign key definitions validate that source column count matches referenced column count (`columns.size == referencedColumns.size`).
+
+### 5. DEFAULT Constraint Evaluation
+- Verifies that when a column with a `DefaultConstraint` is omitted from the `INSERT INTO` column list, the evaluated default expression is automatically supplied.
+
+### 6. Type Mismatch & Statement Atomicity
+- Verifies type error detection:
+```sql
+INSERT INTO Students (ID, Name, Age)
+VALUES ('invalid', 'Ahmed', 20);
+```
+- **Atomicity Assertion**: A failed `INSERT` statement must abort immediately with a `TYPE_ERROR` and leave zero partial row mutations in `DatabaseStorage`.
 
 ---
 
@@ -101,12 +130,3 @@ fun testSelectStatementGoldenAst() {
     assertEquals(expectedAst, ast)
 }
 ```
-
----
-
-## Batch Processor & Lexer Edge-Case Tests
-- **Literal GO**: `SELECT 'GO';` -> `BatchProcessor` outputs 1 single batch; `GO` is not treated as a delimiter.
-- **Commented GO**: `-- GO` or `/* GO */` -> `BatchProcessor` ignores `GO` inside comments.
-- **String Escaping**: `'Ali''s'` tokenizes to string literal value `Ali's`.
-- **Bracket Identifiers**: `[Student Name]` tokenizes to identifier `Student Name`.
-- **Case-Insensitivity**: `students`, `Students`, `STUDENTS` resolve to the same table object.

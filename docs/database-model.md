@@ -73,7 +73,9 @@ typealias Row = Map<String, SqlValue>
 ---
 
 ### Storage Interface Abstraction (`DatabaseStorage`)
-`DatabaseStorage` provides clean query and mutation methods for the Execution Engine:
+`DatabaseStorage` provides clean query and raw mutation methods for the Engine.
+
+**Crucial Architecture Requirement**: The `Executor` and `ExpressionEvaluator` components are exclusively responsible for parsing, evaluating `WHERE` clauses, evaluating predicates, and calculating update values. `DatabaseStorage` does **not** accept or execute Kotlin lambdas, predicates, or evaluation logic; it purely accepts evaluated row subsets provided directly by the Executor.
 
 ```kotlin
 interface DatabaseStorage {

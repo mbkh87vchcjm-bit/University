@@ -15,7 +15,7 @@
 
 ## ✨ Feature Specification Scope
 
-### 🟢 MVP Product Scope
+### 🟢 MVP Target Scope
 *Note: These are overall MVP goals, not necessarily implemented in the initial PR.*
 
 - 📁 **Database Explorer**: Tree view navigation for Databases and Tables (`dbo` schema).
@@ -72,7 +72,7 @@ Detailed architecture and design specifications are located in the [`docs/`](./d
 - 📑 [`docs/ui.md`](./docs/ui.md) — Jetpack Compose UI layout, components & feature categorization.
 - 📑 [`docs/parser.md`](./docs/parser.md) — Lexer, Pratt & Recursive Descent parser, AST, `GO` batch processing & validator pipeline.
 - 📑 [`docs/testing.md`](./docs/testing.md) — Unit, integration, error diagnosis, and benchmark test suite.
-- 📑 [`docs/roadmap.md`](./docs/roadmap.md) — Multi-PR implementation roadmap (PR #5 through PR #19).
+- 📑 [`docs/roadmap.md`](./docs/roadmap.md) — Multi-PR implementation roadmap (PR #5 through PR #20).
 
 ---
 

@@ -32,6 +32,7 @@ The Batch Processor operates before the Lexer:
 - Case-insensitive matching for isolated `GO` tokens (`GO`, `go`, `Go`).
 - Strips leading/trailing whitespace around batch delimiters.
 - **Strict String & Comment Exclusion**: `GO` appearing inside string literals (`SELECT 'GO';`) or inside line/block comments (`-- GO` or `/* GO */`) is treated as literal content and is **never** used as a batch separator.
+- Handles empty batches and multiple consecutive `GO` statements gracefully without crashing or generating illegal AST nodes.
 - Returns an ordered list of executable SQL batch strings.
 
 ---
@@ -55,7 +56,11 @@ The Batch Processor operates before the Lexer:
 
 ## 3. Parser Architecture (`sqlengine/parser`)
 - **Statements**: Parsed using **Recursive Descent Parser**.
-- **Expressions**: Parsed using **Pratt Expression Parser** to handle operator precedence (`AND`, `OR`, `=`, `>=`, `LIKE`, arithmetic).
+- **Expressions**: Parsed using **Pratt Expression Parser** to handle operator precedence (`AND`, `OR`, `NOT`, `=`, `<>`, `>`, `<`, `>=`, `<=`, `LIKE`, `IN`, `BETWEEN`, `+`, `-`, `*`, `/`).
+
+### LIKE Pattern Semantics
+- `%`: Matches zero or more arbitrary characters.
+- `_`: Matches exactly one single character.
 
 ### Table & Column References
 ```kotlin

@@ -21,14 +21,15 @@ Status definitions used across SQL Student Studio documentation:
 | | `USE <database>` | 🟡 Planned (MVP) | Switches active database context |
 | **Table DDL** | `CREATE TABLE` | 🟡 Planned (MVP) | Column definitions, constraints, default schema (`dbo`) |
 | | `DROP TABLE` | 🟡 Planned (MVP) | Table deletion |
-| | `ALTER TABLE` | 🟡 Planned (Phase 3) | Add/Drop column support in Phase 3 |
+| | `ALTER TABLE` | 🟡 Planned (PR #20 / Phase 3) | Add/Drop column support in PR #20 / Phase 3 |
 | **DML** | `INSERT INTO` | 🟡 Planned (MVP) | Single and multi-row insertions |
 | | `SELECT` | 🟡 Planned (MVP) | Projection, filtering, sorting, distinct, top |
 | | `UPDATE` | 🟡 Planned (MVP) | Row updates with WHERE filtering |
 | | `DELETE` | 🟡 Planned (MVP) | Row deletions with WHERE filtering |
 | **Filtering & Operators** | `=, <>, !=, >, <, >=, <=` | 🟡 Planned (MVP) | Comparison operators |
 | | `AND, OR, NOT` | 🟡 Planned (MVP) | Logical operators |
-| | `LIKE, IN, BETWEEN` | 🟡 Planned (MVP) | Pattern matching & range filtering |
+| | `LIKE` | 🟡 Planned (MVP) | Pattern matching (`%` matches zero or more chars, `_` matches exactly one char) |
+| | `IN, BETWEEN` | 🟡 Planned (MVP) | Set membership and range filtering |
 | | `IS NULL / IS NOT NULL` | 🟡 Planned (MVP) | Nullability evaluation |
 | **Result Controls** | `TOP (N)` | 🟡 Planned (MVP) | Row limit (T-SQL syntax) |
 | | `DISTINCT` | 🟡 Planned (MVP) | Duplicate suppression |
