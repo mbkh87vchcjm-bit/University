@@ -51,7 +51,7 @@ data class AppSettingsEntity(
 ## 2. Student Database Engine Models (`sqlengine`)
 
 ### Strongly-Typed Value Abstraction (`SqlValue`)
-To prevent type-erasure issues with comparison, sorting, equality, and aggregations, rows are represented using `SqlValue`:
+To prevent type-erasure issues with comparison, sorting, equality, aggregations, and NULL handling, all engine values strictly implement `SqlValue`:
 
 ```kotlin
 sealed interface SqlValue {
@@ -73,7 +73,7 @@ typealias Row = Map<String, SqlValue>
 ---
 
 ### Storage Interface Abstraction (`DatabaseStorage`)
-`DatabaseStorage` provides clean query and mutation methods for the Execution Engine. Query methods do not accept arbitrary Kotlin lambdas; filtering is performed by the Engine's `ExpressionEvaluator`:
+`DatabaseStorage` provides clean query and mutation methods for the Execution Engine:
 
 ```kotlin
 interface DatabaseStorage {
@@ -100,6 +100,9 @@ interface DatabaseStorage {
 ---
 
 ### Schema, Table & Constraint Models
+
+#### Single Source of Truth for DEFAULT Constraints
+Default values are specified exclusively via `DefaultConstraint(column, expression)`. To prevent duplicate or conflicting definitions, `ColumnModel` does not contain a raw `defaultValue` string field.
 
 ```kotlin
 data class DatabaseModel(
@@ -169,6 +172,6 @@ sealed interface ConstraintModel {
 ---
 
 ## 3. Persistence Strategy for Student Database Engine
-The Student Database state persists independently of Room:
-- Student database instances, schemas, tables, constraints, and rows are stored via the `Persistent Engine Store` (file-backed JSON/binary serialization layer in the app's local storage directory).
-- Calling `persistState()` flushes pending student database changes to disk, ensuring data survives app restarts.
+To ensure student databases survive application restarts without polluting Room:
+- Student database instances, schemas, tables, constraints, and rows are stored in JSON/binary format inside the application's internal files directory (`context.filesDir/student_db/`).
+- Calling `persistState()` serializes `DatabaseStorage` state to disk; calling `restoreState()` loads it back into memory upon app launch.

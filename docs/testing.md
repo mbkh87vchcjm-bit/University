@@ -26,6 +26,16 @@ app/src/test/java/com/sqlstudentstudio/app/
 
 ---
 
+## Result Terminology Assertions
+
+To distinguish row counts across query types:
+- **`SELECT` Queries**: Assert `Returned rows: N` (e.g., `Returned rows: 2`).
+- **`INSERT` Queries**: Assert `Affected rows: N` (e.g., `Affected rows: 2`).
+- **`UPDATE` Queries**: Assert `Affected rows: N` (e.g., `Affected rows: 1`).
+- **`DELETE` Queries**: Assert `Affected rows: N` (e.g., `Affected rows: 1`).
+
+---
+
 ## Essential Benchmark Test Flow
 
 Every build must pass the core end-to-end execution benchmark test flow:
@@ -61,23 +71,42 @@ GO
 1. `CREATE DATABASE` successfully registers database in `DatabaseStorage`.
 2. `USE` changes active engine context to `University`.
 3. `CREATE TABLE` enforces non-null constraints and primary key index.
-4. `INSERT INTO` creates 2 records (`2 rows affected`). Duplicate primary key insertion throws `CONSTRAINT_ERROR`.
+4. `INSERT INTO` creates 2 records (`Affected rows: 2`). Duplicate primary key insertion throws `CONSTRAINT_ERROR`.
 5. `SELECT` returns filtered rows sorted by `Name` (`Returned rows: 2`).
 
 ---
 
-## Error Diagnostic Test Suite
-Must verify precise line/column reporting and error suggestion for:
-- Invalid Syntax (`SELECT * FORM Students;`) -> Suggests `FROM` at line 1, col 10.
-- Missing Object (`SELECT * FROM UnknownTable;`) -> Throws `SEMANTIC_ERROR`.
-- Type Mismatch (`INSERT INTO Students (ID, Name, Age) VALUES ('invalid', 'Ahmed', 20);`) -> Throws `TYPE_ERROR`.
-- Foreign Key Violation -> Rejects non-existent referenced primary key.
+## Golden AST Test Specification
+Parser tests must include Golden AST verification comparing parsed output against explicit AST data structures:
+
+```kotlin
+@Test
+fun testSelectStatementGoldenAst() {
+    val sql = "SELECT ID, Name FROM Students WHERE Age >= 20;"
+    val ast = Parser(Lexer(sql).tokenize()).parseStatement()
+
+    val expectedAst = SelectStatement(
+        columns = listOf(
+            SelectColumn.Simple(ColumnReference(columnName = "ID")),
+            SelectColumn.Simple(ColumnReference(columnName = "Name"))
+        ),
+        fromTable = TableReference(schema = "dbo", table = "Students"),
+        whereClause = BinaryExpression(
+            left = ColumnExpression("Age"),
+            operator = BinaryOperator.GREATER_THAN_OR_EQUAL,
+            right = LiteralExpression(SqlValue.IntValue(20))
+        )
+    )
+
+    assertEquals(expectedAst, ast)
+}
+```
 
 ---
 
-## Specific Parser & Lexer Edge-Case Tests
+## Batch Processor & Lexer Edge-Case Tests
+- **Literal GO**: `SELECT 'GO';` -> `BatchProcessor` outputs 1 single batch; `GO` is not treated as a delimiter.
+- **Commented GO**: `-- GO` or `/* GO */` -> `BatchProcessor` ignores `GO` inside comments.
 - **String Escaping**: `'Ali''s'` tokenizes to string literal value `Ali's`.
 - **Bracket Identifiers**: `[Student Name]` tokenizes to identifier `Student Name`.
-- **Case-Insensitivity**: `students`, `Students`, `STUDENTS` resolve to the same table.
-- **GO Delimiters**: `GO` inside strings (`'SELECT ''GO'';'`) or comments (`-- GO`) is ignored by `BatchProcessor`.
-- **Golden AST Verification**: Serialized AST output compared against expected Golden AST structures.
+- **Case-Insensitivity**: `students`, `Students`, `STUDENTS` resolve to the same table object.

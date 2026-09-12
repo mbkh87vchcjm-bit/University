@@ -31,21 +31,21 @@ Executor & Storage Abstraction Engine
 The Batch Processor operates before the Lexer:
 - Case-insensitive matching for isolated `GO` tokens (`GO`, `go`, `Go`).
 - Strips leading/trailing whitespace around batch delimiters.
-- Ignores `GO` inside string literals (`'SELECT ''GO'';'`) or line comments (`-- GO`).
+- **Strict String & Comment Exclusion**: `GO` appearing inside string literals (`SELECT 'GO';`) or inside line/block comments (`-- GO` or `/* GO */`) is treated as literal content and is **never** used as a batch separator.
 - Returns an ordered list of executable SQL batch strings.
 
 ---
 
 ## 2. Lexer & Identifiers (`sqlengine/lexer`)
 
-### Case Insensitivity
-- SQL Keywords, functions, and identifiers (`Students`, `students`, `STUDENTS`) are **case-insensitive** during resolution, while preserving original casing for display.
+### Case Insensitivity Rules
+- All SQL keywords, functions, and object identifiers (`Students`, `students`, `STUDENTS`) are **case-insensitive** during resolution, while preserving original casing for display purposes.
 
 ### Identifier Resolution Rules
 - Supports single-part identifiers (`Students`) resolving to default schema `dbo` (`dbo.Students`).
 - Supports two-part schema identifiers (`dbo.Students`).
 - Supports bracketed identifiers (`[Student Name]`).
-- Three-part database identifiers (`University.dbo.Students`) are out of initial scope.
+- Three-part database identifiers (`University.dbo.Students`) are deferred to post-v1.0.
 
 ### String Escaping & Literals
 - T-SQL single quote escaping (`'Ali''s'`) resolves to string value `Ali's`.
