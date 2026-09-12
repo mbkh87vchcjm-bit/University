@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tabeeb_ashiah/main.dart';
+import 'package:sql_student_studio/app/app.dart';
 
 void main() {
-  testWidgets('Tabeeb Ashiah app smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const TabeebAshiahApp());
-    expect(find.text('طبيب أشعة'), findsWidgets);
+  testWidgets('App renders Home screen', (WidgetTester tester) async {
+    await tester.pumpWidget(const SqlStudentStudioApp());
+    expect(find.text('SQL Student Studio'), findsWidgets);
   });
 }

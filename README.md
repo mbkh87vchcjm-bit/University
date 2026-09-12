@@ -9,7 +9,7 @@
 
 **SQL Student Studio** provides an experience similar to Microsoft SQL Server Management Studio (SSMS) directly on Android smartphones and tablets. It is built specifically for educational purposes to enable students to write, practice, and learn **T-SQL** and database design offline.
 
-> **Note**: This application is an educational simulation environment for Android. It does NOT attempt to run Microsoft SQL Server natively on mobile devices. Project implementation proceeds incrementally across isolated PRs according to [`docs/roadmap.md`](./docs/roadmap.md).
+> **Note**: This application is an educational simulation environment for Android built with Flutter & Dart. It does NOT attempt to run Microsoft SQL Server natively on mobile devices. Project implementation proceeds incrementally across isolated PRs according to [`docs/roadmap.md`](./docs/roadmap.md).
 
 ---
 
@@ -35,29 +35,28 @@
 
 ## 🏗️ Architecture & Technology Stack
 
-- **Primary Language**: Kotlin (100% Android native)
-- **UI Toolkit**: Jetpack Compose (Modern declarative UI)
-- **App Storage / Metadata**: Room DB (SQLite foundation for application metadata, projects, saved scripts, history)
-- **SQL Execution Engine**: Pure Kotlin standalone engine (`Lexer` -> `Parser` -> `AST` -> `Validator` -> `Executor` -> `DatabaseStorage` -> `Persistent Engine Store`)
+- **Primary Language & Framework**: Dart & Flutter (Cross-platform mobile application)
+- **UI Architecture**: Material 3 & Decoupled Features layout (`lib/features/`, `lib/app/`)
+- **App Metadata Storage**: SQLite / Local storage for projects, saved scripts, history, settings.
+- **SQL Execution Engine**: Pure Dart standalone engine (`lib/sql_engine/` containing `lexer/`, `parser/`, `ast/`, `validator/`, `executor/`, `storage/`, `types/`, `constraints/`, `errors/`)
 
 ```
-Android App
+Flutter Application Layer
 │
-├── Application Layer
-│   ├── Jetpack Compose UI
-│   ├── ViewModel & Use Cases
-│   ├── Room DB
-│   └── SQLite (App Metadata)
+├── App Layout (lib/app/, lib/core/, lib/features/)
+│   ├── Navigation & Theme
+│   ├── Home, Projects, Explorer, Editor, Results
+│   └── App Storage (SQLite Metadata)
 │
-└── SQL Student Engine (Standalone Pure Kotlin)
+└── SQL Student Engine (Standalone Pure Dart - lib/sql_engine/)
     ├── Batch Processor (GO)
     ├── Lexer
     ├── Parser (Recursive Descent + Pratt)
-    ├── AST
-    ├── Validator
-    ├── Executor
+    ├── AST Statement & Expression Nodes
+    ├── Semantic Validator
+    ├── Execution Engine
     ├── DatabaseStorage Abstraction
-    └── Persistent Engine Store (Student DB Files)
+    └── Persistent Engine Store (Student DB State)
 ```
 
 ---
@@ -66,10 +65,10 @@ Android App
 
 Detailed architecture and design specifications are located in the [`docs/`](./docs) directory:
 
-- 📑 [`docs/architecture.md`](./docs/architecture.md) — Architectural principles & standalone `sqlengine` module layout.
+- 📑 [`docs/architecture.md`](./docs/architecture.md) — Architectural principles & standalone `lib/sql_engine/` structure.
 - 📑 [`docs/sql-supported.md`](./docs/sql-supported.md) — T-SQL feature matrix & data types specification.
-- 📑 [`docs/database-model.md`](./docs/database-model.md) — Room metadata models, `SqlValue` types, and `DatabaseStorage` engine structures.
-- 📑 [`docs/ui.md`](./docs/ui.md) — Jetpack Compose UI layout, components & feature categorization.
+- 📑 [`docs/database-model.md`](./docs/database-model.md) — App metadata models, `SqlValue` types, and `DatabaseStorage` engine structures.
+- 📑 [`docs/ui.md`](./docs/ui.md) — Flutter UI layout, components & feature categorization.
 - 📑 [`docs/parser.md`](./docs/parser.md) — Lexer, Pratt & Recursive Descent parser, AST, `GO` batch processing & validator pipeline.
 - 📑 [`docs/testing.md`](./docs/testing.md) — Unit, integration, error diagnosis, and benchmark test suite.
 - 📑 [`docs/roadmap.md`](./docs/roadmap.md) — Multi-PR implementation roadmap (PR #5 through PR #20).
