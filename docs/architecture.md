@@ -8,93 +8,106 @@
 ## 🏛️ Architectural Principles & Decoupling
 
 ### 1. Standalone Pure Kotlin SQL Engine
-The SQL Engine is decoupled from Android UI, Activities, Context, Compose, and Room. It is a pure Kotlin implementation that can be compiled and unit tested independently.
+The SQL Engine is decoupled from Android UI, Activities, Context, Compose, and Room. It is a pure Kotlin module (`sqlengine`) that compiles and executes unit tests independently on JVM without Android dependencies.
 
 ### 2. Dual Database Architecture
 The application maintains two distinct database systems:
-- **Application Database (Room / SQLite)**: Stores app metadata (projects, scripts, query history, settings, workspace state).
-- **Student SQL Engine (Custom Educational Engine)**: Implements database concepts, T-SQL execution, schema management, data types, constraints, and local engine storage abstraction. Student data is never dumped directly into Room as a quick shortcut.
+- **Application Database (Room / SQLite)**: Stores app metadata (projects, scripts, query history, app settings, workspace state).
+- **Student SQL Engine (Custom Educational Engine)**: Implements T-SQL database concepts, schema management, data types, constraints, AST evaluation, and local engine storage abstraction via `DatabaseStorage` and `Persistent Engine Store` (decoupled from Room).
 
 ```
-UI (Jetpack Compose)
-       │
-       ▼
-   ViewModel
-       │
-       ▼
-   Use Cases
-       │
- ┌─────┴───────────────┐
- ▼                     ▼
-Repositories       SqlEngine
- │                     │
- ▼                     ▼
-Room              Engine Storage (DatabaseStorage)
- │
- ▼
-SQLite
+Android App
+│
+├── Application Layer
+│   ├── Jetpack Compose UI
+│   ├── ViewModel & Use Cases
+│   ├── Room DB
+│   └── SQLite (App Metadata)
+│
+└── SQL Student Engine (Standalone Pure Kotlin)
+    ├── Batch Processor (GO)
+    ├── Lexer
+    ├── Parser (Recursive Descent + Pratt)
+    ├── AST
+    ├── Validator
+    ├── Executor
+    ├── DatabaseStorage Abstraction
+    └── Persistent Engine Store (Student DB Storage)
 ```
 
 ---
 
-## 📁 Source Directory Layout
+## 📁 Repository Directory Layout
+
+To maintain clear separation, the project is structured with an `app` Android module and a standalone `sqlengine` Pure Kotlin module:
 
 ```
 SQL-Student-Studio/
 │
-├── app/
+├── app/                         # Android Native Application Module
 │   └── src/
 │       ├── main/
 │       │   ├── java/com/sqlstudentstudio/app/
 │       │   │   ├── ui/          # Jetpack Compose UI (screens, theme, components)
 │       │   │   ├── domain/      # Domain models & Use Cases
-│       │   │   ├── data/        # Room Database, DAOs, Repositories
-│       │   │   ├── sqlengine/   # Pure Kotlin T-SQL Engine (Lexer, Parser, AST, Storage)
-│       │   │   ├── intellisense/# Schema-aware suggestion provider
-│       │   │   ├── formatter/   # SQL code formatter
-│       │   │   ├── export/      # Import / Export (.sql, .csv, .json, .zip)
-│       │   │   └── backup/      # Project zip backup & restore
-│       │   │
+│       │   │   └── data/        # Room Database, DAOs, Repositories
 │       │   └── res/             # Android Resources
-│       │
-│       ├── test/                # Local JVM Unit Tests (Engine & ViewModels)
-│       └── androidTest/         # Instrumented Android & UI Tests
+│       ├── test/                # Local Android Viewmodel / Repository Tests
+│       └── androidTest/         # Instrumented Android UI Tests
+│
+├── sqlengine/                   # Standalone Pure Kotlin Engine Module (No Android Dependencies)
+│   └── src/
+│       ├── main/kotlin/com/sqlstudentstudio/sqlengine/
+│       │   ├── batch/           # GO Batch Processor
+│       │   ├── lexer/           # SQL Tokenizer & String Escaper
+│       │   ├── parser/          # Recursive Descent & Pratt Expression Parser
+│       │   ├── ast/             # Abstract Syntax Tree Nodes
+│       │   ├── validator/       # Semantic & Schema Validator
+│       │   ├── executor/        # Expression Evaluator & Execution Engine
+│       │   ├── model/           # SqlValue, TableModel, ConstraintModel
+│       │   ├── storage/         # DatabaseStorage & Persistent Engine Store
+│       │   └── error/           # SqlError Diagnostic System
+│       └── test/kotlin/         # JVM Standalone Unit Tests
 │
 ├── docs/                        # Specifications & Architecture Documentation
-├── gradle/
 ├── build.gradle.kts
 ├── settings.gradle.kts
 └── README.md
 ```
+
+*Note: Component directories such as `intellisense/`, `formatter/`, `export/`, and `backup/` will be introduced in their respective PRs as outlined in `docs/roadmap.md`.*
 
 ---
 
 ## ⚙️ SQL Engine Pipeline
 
 ```
-SQL Text
+Raw SQL Text
    │
    ▼
-Batch Processor (Splits raw script by GO separators)
+Batch Processor (Pre-lexer split by isolated GO directives)
    │
    ▼
-Lexer (Tokenizes SQL keywords, operators, identifiers, literals)
+Lexer (Tokenizes SQL keywords, operators, identifiers, literals, escaped strings)
    │
    ▼
-Parser (Recursive Descent Parser + Pratt Expression Parser)
+Parser (Recursive Descent Parser for DDL/DML + Pratt Expression Parser for expressions)
    │
    ▼
 Abstract Syntax Tree (AST)
    │
    ▼
-Semantic Validator (Type checking, schema validation, constraint checks)
+Semantic Validator (Type checking, schema verification, constraint rules)
    │
    ▼
-Executor (Evaluates AST against DatabaseStorage context)
+Executor (Evaluates AST expressions via ExpressionEvaluator)
    │
    ▼
 DatabaseStorage Engine Abstraction
    │
    ▼
-QueryResult (Rows, affected count, execution time, messages, errors)
+Persistent Engine Store (Saves student database state across app restarts)
+   │
+   ▼
+QueryResult (Returned rows for SELECT, affected rows for INSERT/UPDATE/DELETE, execution duration, diagnostics)
 ```

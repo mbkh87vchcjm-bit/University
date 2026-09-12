@@ -1,7 +1,7 @@
 # Engine Storage & Database Data Models
 
 ## Overview
-SQL Student Studio separates application management models (stored in Room) from student database engine models (managed via `DatabaseStorage` interface).
+SQL Student Studio separates application metadata models (stored in Room) from student database engine models (managed via `DatabaseStorage` and `Persistent Engine Store`).
 
 ---
 
@@ -50,22 +50,57 @@ data class AppSettingsEntity(
 
 ## 2. Student Database Engine Models (`sqlengine`)
 
-### Storage Interface Abstraction
+### Strongly-Typed Value Abstraction (`SqlValue`)
+To prevent type-erasure issues with comparison, sorting, equality, and aggregations, rows are represented using `SqlValue`:
+
+```kotlin
+sealed interface SqlValue {
+    data object Null : SqlValue
+    data class IntValue(val value: Int) : SqlValue
+    data class LongValue(val value: Long) : SqlValue
+    data class DecimalValue(val value: BigDecimal) : SqlValue
+    data class DoubleValue(val value: Double) : SqlValue
+    data class StringValue(val value: String) : SqlValue
+    data class BooleanValue(val value: Boolean) : SqlValue
+    data class DateValue(val value: LocalDate) : SqlValue
+    data class DateTimeValue(val value: LocalDateTime) : SqlValue
+    data class TimeValue(val value: LocalTime) : SqlValue
+}
+
+typealias Row = Map<String, SqlValue>
+```
+
+---
+
+### Storage Interface Abstraction (`DatabaseStorage`)
+`DatabaseStorage` provides clean query and mutation methods for the Execution Engine. Query methods do not accept arbitrary Kotlin lambdas; filtering is performed by the Engine's `ExpressionEvaluator`:
+
 ```kotlin
 interface DatabaseStorage {
     fun createDatabase(dbName: String)
     fun dropDatabase(dbName: String)
     fun getDatabase(dbName: String): DatabaseModel?
+    fun listDatabases(): List<String>
+
     fun createTable(dbName: String, table: TableModel)
     fun dropTable(dbName: String, schema: String, tableName: String)
-    fun insertRows(dbName: String, schema: String, tableName: String, rows: List<Map<String, Any?>>)
-    fun selectRows(dbName: String, schema: String, tableName: String): List<Map<String, Any?>>
-    fun updateRows(dbName: String, schema: String, tableName: String, predicate: (Map<String, Any?>) -> Boolean, updates: Map<String, Any?>): Int
-    fun deleteRows(dbName: String, schema: String, tableName: String, predicate: (Map<String, Any?>) -> Boolean): Int
+    fun getTable(dbName: String, schema: String, tableName: String): TableModel?
+    fun listTables(dbName: String, schema: String = "dbo"): List<String>
+
+    fun insertRows(dbName: String, schema: String, tableName: String, rows: List<Row>)
+    fun selectRows(dbName: String, schema: String, tableName: String): List<Row>
+    fun updateRows(dbName: String, schema: String, tableName: String, targetRows: List<Row>, updates: Map<String, SqlValue>): Int
+    fun deleteRows(dbName: String, schema: String, tableName: String, targetRows: List<Row>): Int
+
+    fun persistState()
+    fun restoreState()
 }
 ```
 
-### Hierarchy & Constraint Models
+---
+
+### Schema, Table & Constraint Models
+
 ```kotlin
 data class DatabaseModel(
     val name: String,
@@ -82,15 +117,14 @@ data class TableModel(
     val schema: String = "dbo",
     val columns: MutableList<ColumnModel>,
     val constraints: MutableList<ConstraintModel> = mutableListOf(),
-    val rows: MutableList<Map<String, Any?>> = mutableListOf()
+    val rows: MutableList<Row> = mutableListOf()
 )
 
 data class ColumnModel(
     val name: String,
     val dataType: DataType,
     val nullable: Boolean = true,
-    val identity: Boolean = false,
-    val defaultValue: String? = null
+    val identity: Boolean = false
 )
 
 sealed interface ConstraintModel {
@@ -106,7 +140,13 @@ sealed interface ConstraintModel {
         val columns: List<String>,
         val referencedTable: String,
         val referencedColumns: List<String>
-    ) : ConstraintModel
+    ) : ConstraintModel {
+        init {
+            require(columns.size == referencedColumns.size) {
+                "Foreign Key column count must match referenced column count."
+            }
+        }
+    }
 
     data class UniqueConstraint(
         override val name: String?,
@@ -116,12 +156,19 @@ sealed interface ConstraintModel {
     data class DefaultConstraint(
         override val name: String?,
         val column: String,
-        val defaultValueExpression: String
+        val expression: Expression
     ) : ConstraintModel
 
     data class CheckConstraint(
         override val name: String?,
-        val expression: String
+        val expression: Expression
     ) : ConstraintModel
 }
 ```
+
+---
+
+## 3. Persistence Strategy for Student Database Engine
+The Student Database state persists independently of Room:
+- Student database instances, schemas, tables, constraints, and rows are stored via the `Persistent Engine Store` (file-backed JSON/binary serialization layer in the app's local storage directory).
+- Calling `persistState()` flushes pending student database changes to disk, ensuring data survives app restarts.

@@ -7,7 +7,7 @@ SQL Student Studio provides a mobile-optimized SSMS workflow using Jetpack Compo
 
 ## UI Feature Categorization
 
-### 🟢 MVP Baseline (Initial Release)
+### 🟢 MVP Baseline Product Scope
 1. **Home Screen (`ui/home`)**
    - New Project & Open Project buttons.
    - Recent Projects list.
@@ -17,14 +17,14 @@ SQL Student Studio provides a mobile-optimized SSMS workflow using Jetpack Compo
    - Basic context menus (View Data, Script Table, Delete).
 3. **Query Editor (`ui/editor`)**
    - Single & Multi-line SQL text editor with line numbers and monospace font.
-   - Syntax highlighting (Keywords, Strings, Numbers, Comments).
+   - Basic Syntax Highlighting (Keywords, Strings, Numbers, Comments).
    - Execution controls: `▶ Execute` (Run All or Selection).
-   - File Save action.
+   - Basic Save/Open SQL script actions.
 4. **Results & Messages (`ui/results`)**
    - Scrollable tabular result grid.
-   - Execution messages (Affected rows count, execution time in ms, diagnostic error display).
-5. **Projects & Files (`ui/project`, `ui/files`)**
-   - Local script file listing and project management.
+   - Execution messages (Returned rows count for `SELECT`, Affected rows count for `INSERT`/`UPDATE`/`DELETE`, execution time in ms, diagnostic error display).
+5. **Projects (`ui/project`)**
+   - Basic project workspace creation.
 
 ---
 
@@ -34,11 +34,12 @@ SQL Student Studio provides a mobile-optimized SSMS workflow using Jetpack Compo
 3. **SQL Formatter**: Code beautifier for T-SQL syntax formatting.
 4. **Visual Table Designer (`ui/designer`)**: GUI grid for table structure creation generating standard `CREATE TABLE` scripts.
 5. **ER Diagram Viewer (`ui/diagram`)**: Entity Relationship graph rendering PK/FK links.
-6. **CSV / JSON Export**: Exporting grid results to CSV and JSON formats.
+6. **Advanced File Management & CSV / JSON Export (`ui/files`)**: Advanced file manager, export results grid to CSV and JSON formats.
 
 ---
 
 ### 🔵 Phase 3 & Future Capabilities
-1. **Interactive Tutorial & Practice Mode**: Self-paced SQL lessons with automated validation.
-2. **Project ZIP Backup & Restore**: Full archive packaging and restoration.
-3. **Optional AI Error Assistant**: Local or optional cloud helper providing human-friendly syntax guidance for execution errors.
+1. **Views Support (`ui/explorer`)**: Database Explorer tree node and engine support for Views (`CREATE VIEW`).
+2. **Interactive Tutorial & Practice Mode**: Self-paced SQL lessons with automated validation.
+3. **Project ZIP Backup & Restore**: Full archive packaging and restoration.
+4. **Optional AI Error Assistant**: Local or optional cloud helper providing human-friendly syntax guidance for execution errors.

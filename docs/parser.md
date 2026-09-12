@@ -7,13 +7,13 @@ The SQL Engine parses T-SQL code through a multi-stage execution pipeline:
 Raw SQL Script String
        │
        ▼
-Batch Processor (Pre-lexer split by GO directive)
+Batch Processor (Pre-lexer split by isolated GO directives)
        │
        ▼
-Lexer / Tokenizer (Tokens & Escaped Strings)
+Lexer / Tokenizer (Tokens, Literals, Identifiers, Escaped Strings)
        │
        ▼
-Parser (Recursive Descent + Pratt Expression Parser)
+Parser (Recursive Descent Parser + Pratt Expression Parser)
        │
        ▼
 Abstract Syntax Tree (AST)
@@ -31,31 +31,38 @@ Executor & Storage Abstraction Engine
 The Batch Processor operates before the Lexer:
 - Case-insensitive matching for isolated `GO` tokens (`GO`, `go`, `Go`).
 - Strips leading/trailing whitespace around batch delimiters.
-- Ignores `GO` inside string literals (`'SELECT ''GO'';'`) or line comments.
+- Ignores `GO` inside string literals (`'SELECT ''GO'';'`) or line comments (`-- GO`).
 - Returns an ordered list of executable SQL batch strings.
 
 ---
 
-## 2. Lexer & String Escaping (`sqlengine/lexer`)
-Converts batch text into tokens:
-- **Keywords**: `SELECT`, `FROM`, `WHERE`, `INSERT`, `INTO`, `VALUES`, `UPDATE`, `SET`, `DELETE`, `CREATE`, `DATABASE`, `TABLE`, `DROP`, `ALTER`, `USE`, `DISTINCT`, `TOP`, `ORDER`, `BY`, `ASC`, `DESC`, `GROUP`, `HAVING`, `JOIN`, `INNER`, `LEFT`, `ON`, `AND`, `OR`, `NOT`, `LIKE`, `IN`, `BETWEEN`, `IS`, `NULL`, `PRIMARY`, `KEY`, `FOREIGN`, `REFERENCES`, `UNIQUE`, `DEFAULT`, `CHECK`, `AS`.
-- **Operators**: `=`, `<>`, `!=`, `>`, `<`, `>=`, `<=`, `+`, `-`, `*`, `/`, `%`.
-- **Symbols**: `(`, `)`, `,`, `;`, `.`, `[`, `]`.
-- **Identifiers**: Standard identifiers (`Students`, `dbo.Students`) and bracketed identifiers (`[Student Name]`).
-- **String Escaping**: T-SQL single quote escaping (`'Ali''s'`) resolves to the string value `Ali's`.
+## 2. Lexer & Identifiers (`sqlengine/lexer`)
+
+### Case Insensitivity
+- SQL Keywords, functions, and identifiers (`Students`, `students`, `STUDENTS`) are **case-insensitive** during resolution, while preserving original casing for display.
+
+### Identifier Resolution Rules
+- Supports single-part identifiers (`Students`) resolving to default schema `dbo` (`dbo.Students`).
+- Supports two-part schema identifiers (`dbo.Students`).
+- Supports bracketed identifiers (`[Student Name]`).
+- Three-part database identifiers (`University.dbo.Students`) are out of initial scope.
+
+### String Escaping & Literals
+- T-SQL single quote escaping (`'Ali''s'`) resolves to string value `Ali's`.
+- Keyword `NULL` tokenizes to `SqlValue.Null`.
 
 ---
 
 ## 3. Parser Architecture (`sqlengine/parser`)
-- **Top-Level Statements**: Parsed using **Recursive Descent Parser**.
-- **Expressions (WHERE, HAVING, COMPUTED)**: Parsed using **Pratt Expression Parser** to handle operator precedence (`AND`, `OR`, `=`, `>=`, `LIKE`, arithmetic).
+- **Statements**: Parsed using **Recursive Descent Parser**.
+- **Expressions**: Parsed using **Pratt Expression Parser** to handle operator precedence (`AND`, `OR`, `=`, `>=`, `LIKE`, arithmetic).
 
 ### Table & Column References
 ```kotlin
 data class TableReference(
-    val schema: String?,
+    val schema: String? = "dbo",
     val table: String,
-    val alias: String?
+    val alias: String? = null
 )
 
 data class ColumnReference(
@@ -65,7 +72,7 @@ data class ColumnReference(
 )
 ```
 
-### Abstract Syntax Tree (AST)
+### Complete AST Statement Nodes
 ```kotlin
 sealed interface SqlStatement
 
@@ -79,19 +86,51 @@ data class CreateTableStatement(
     val constraints: List<ConstraintModel>
 ) : SqlStatement
 
+data class DropTableStatement(val tableRef: TableReference) : SqlStatement
+
+data class InsertStatement(
+    val tableRef: TableReference,
+    val columns: List<String> = emptyList(),
+    val valuesList: List<List<Expression>>
+) : SqlStatement
+
 data class SelectStatement(
     val isDistinct: Boolean = false,
     val top: Int? = null,
     val columns: List<SelectColumn>,
     val fromTable: TableReference?,
+    val joins: List<JoinClause> = emptyList(),
     val whereClause: Expression? = null,
+    val groupBy: List<Expression> = emptyList(),
+    val having: Expression? = null,
     val orderBy: List<OrderByClause> = emptyList()
+) : SqlStatement
+
+data class UpdateStatement(
+    val tableRef: TableReference,
+    val assignments: Map<String, Expression>,
+    val whereClause: Expression? = null
+) : SqlStatement
+
+data class DeleteStatement(
+    val tableRef: TableReference,
+    val whereClause: Expression? = null
 ) : SqlStatement
 ```
 
 ---
 
-## 4. Error Diagnostic System (`SqlError`)
+## 4. Specific Syntax Rules
+
+### `DECIMAL(p, s)` Semantics
+- In MVP, precision `p` and scale `s` must be specified explicitly (e.g., `DECIMAL(10, 2)`). Omitting parameters is rejected by the Parser in initial phases.
+
+### `TOP (N)` Syntax
+- MVP supports explicit parenthesized `TOP (N)` syntax (e.g., `SELECT TOP (5) * FROM Students`).
+
+---
+
+## 5. Error Diagnostic System (`SqlError`)
 Structured diagnostic errors provide exact positioning and actionable feedback:
 
 ```kotlin

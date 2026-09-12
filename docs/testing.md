@@ -1,28 +1,27 @@
 # Testing Strategy & Validation Benchmark
 
 ## Overview
-SQL Student Studio emphasizes rigorous testing of the SQL Engine separately from Android UI components.
+SQL Student Studio emphasizes rigorous testing of the SQL Engine separately from Android UI components inside the standalone `sqlengine` module.
 
 ---
 
 ## Test Suites Layout
 
 ```
-app/src/test/java/com/sqlstudentstudio/
-├── sqlengine/
-│   ├── BatchProcessorTest.kt   # GO batch delimiter tests
-│   ├── LexerTest.kt            # Tokenization & string escaping tests
-│   ├── ParserTest.kt           # AST parsing (Recursive Descent + Pratt Parser)
-│   ├── AstTest.kt              # AST node structure & mapping
-│   ├── ValidatorTest.kt        # Semantic & schema validation
-│   ├── ExecutorTest.kt         # Engine execution & result verification
-│   ├── ConstraintTest.kt       # PK, FK, Unique, Default, Nullability tests
-│   ├── StorageTest.kt          # DatabaseStorage implementation tests
-│   └── ErrorTest.kt            # SqlError positioning & suggestion tests
-│
-└── viewmodel/
-    ├── QueryEditorViewModelTest.kt
-    └── DatabaseExplorerViewModelTest.kt
+sqlengine/src/test/kotlin/com/sqlstudentstudio/sqlengine/
+├── BatchProcessorTest.kt   # GO batch delimiter, string & comment tests
+├── LexerTest.kt            # Tokenization, string escaping ('Ali''s'), bracket identifiers
+├── ParserTest.kt           # AST parsing & Golden AST verification
+├── AstTest.kt              # AST node structure & mapping
+├── ValidatorTest.kt        # Semantic, schema & case-insensitivity validation
+├── ExecutorTest.kt         # Engine execution & result verification
+├── ConstraintTest.kt       # Single/Composite PK, FK, Unique, Default, Nullability tests
+├── StorageTest.kt          # DatabaseStorage & Persistent Engine Store tests
+└── ErrorTest.kt            # SqlError positioning & suggestion tests
+
+app/src/test/java/com/sqlstudentstudio/app/
+├── QueryEditorViewModelTest.kt
+└── DatabaseExplorerViewModelTest.kt
 ```
 
 ---
@@ -60,10 +59,10 @@ GO
 
 ### Required Test Assertions:
 1. `CREATE DATABASE` successfully registers database in `DatabaseStorage`.
-2. `USE` changes engine context to `University`.
+2. `USE` changes active engine context to `University`.
 3. `CREATE TABLE` enforces non-null constraints and primary key index.
-4. `INSERT INTO` creates 2 records; duplicate primary key insertion throws `CONSTRAINT_ERROR`.
-5. `SELECT` returns filtered rows sorted by `Name` with accurate row count (`2 rows affected`).
+4. `INSERT INTO` creates 2 records (`2 rows affected`). Duplicate primary key insertion throws `CONSTRAINT_ERROR`.
+5. `SELECT` returns filtered rows sorted by `Name` (`Returned rows: 2`).
 
 ---
 
@@ -71,5 +70,14 @@ GO
 Must verify precise line/column reporting and error suggestion for:
 - Invalid Syntax (`SELECT * FORM Students;`) -> Suggests `FROM` at line 1, col 10.
 - Missing Object (`SELECT * FROM UnknownTable;`) -> Throws `SEMANTIC_ERROR`.
-- Type Mismatch (`INSERT INTO Students VALUES ('invalid', 'Ahmed', 20);`) -> Throws `TYPE_ERROR`.
+- Type Mismatch (`INSERT INTO Students (ID, Name, Age) VALUES ('invalid', 'Ahmed', 20);`) -> Throws `TYPE_ERROR`.
 - Foreign Key Violation -> Rejects non-existent referenced primary key.
+
+---
+
+## Specific Parser & Lexer Edge-Case Tests
+- **String Escaping**: `'Ali''s'` tokenizes to string literal value `Ali's`.
+- **Bracket Identifiers**: `[Student Name]` tokenizes to identifier `Student Name`.
+- **Case-Insensitivity**: `students`, `Students`, `STUDENTS` resolve to the same table.
+- **GO Delimiters**: `GO` inside strings (`'SELECT ''GO'';'`) or comments (`-- GO`) is ignored by `BatchProcessor`.
+- **Golden AST Verification**: Serialized AST output compared against expected Golden AST structures.

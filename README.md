@@ -9,20 +9,23 @@
 
 **SQL Student Studio** provides an experience similar to Microsoft SQL Server Management Studio (SSMS) directly on Android smartphones and tablets. It is built specifically for educational purposes to enable students to write, practice, and learn **T-SQL** and database design offline.
 
-> **Note**: This application is an educational simulation environment for Android. It does NOT attempt to run Microsoft SQL Server natively on mobile devices. Project implementation proceeds incrementally according to the multi-PR roadmap outlined in [`docs/roadmap.md`](./docs/roadmap.md).
+> **Note**: This application is an educational simulation environment for Android. It does NOT attempt to run Microsoft SQL Server natively on mobile devices. Project implementation proceeds incrementally across isolated PRs according to [`docs/roadmap.md`](./docs/roadmap.md).
 
 ---
 
 ## ✨ Feature Specification Scope
 
-### 🟢 MVP Targets
-- 📁 **Database Explorer**: Tree view navigation for Databases, Tables, and Views (`dbo` schema).
+### 🟢 MVP Product Scope
+*Note: These are overall MVP goals, not necessarily implemented in the initial PR.*
+
+- 📁 **Database Explorer**: Tree view navigation for Databases and Tables (`dbo` schema).
 - 📝 **Query Editor**: Monospace SQL editor with line numbers, basic syntax highlighting, and execution controls.
 - ⚡ **Execution Engine**: Standalone T-SQL execution (`CREATE DATABASE`, `USE`, `CREATE TABLE`, `INSERT`, `SELECT`, `UPDATE`, `DELETE`, `WHERE`, `ORDER BY`, `DISTINCT`, `TOP`, `GO` batch separator).
 - 🔒 **Integrity Constraints**: Single & Composite `PRIMARY KEY`, `FOREIGN KEY`, `NOT NULL`, `DEFAULT`, `UNIQUE`.
-- 📊 **Results & Messages**: Tabbed view displaying result grids, affected row counts, execution durations, and syntax diagnostics (`SqlError`).
+- 📊 **Results & Messages**: Tabbed view displaying result grids, affected row counts (`INSERT`/`UPDATE`/`DELETE`), returned rows (`SELECT`), execution durations, and syntax diagnostics (`SqlError`).
 
 ### 🟡 Phase 2 & 3 Planned Features
+- 📁 **Views Support**: Database Explorer tree view for Views (`CREATE VIEW` in Phase 3).
 - 💡 **IntelliSense Autocomplete**: Real-time schema suggestions for database objects, tables, and columns (offline).
 - 🛠️ **Visual Table Designer**: Visual table creation interface generating standard `CREATE TABLE` scripts.
 - 🕸️ **ER Diagram Viewer**: Visual rendering of entity relationship diagrams built from primary/foreign key definitions.
@@ -35,31 +38,26 @@
 - **Primary Language**: Kotlin (100% Android native)
 - **UI Toolkit**: Jetpack Compose (Modern declarative UI)
 - **App Storage / Metadata**: Room DB (SQLite foundation for application metadata, projects, saved scripts, history)
-- **SQL Execution Engine**: Pure Kotlin standalone engine (`Lexer` -> `Parser` -> `AST` -> `Validator` -> `Executor` -> `DatabaseStorage`)
+- **SQL Execution Engine**: Pure Kotlin standalone engine (`Lexer` -> `Parser` -> `AST` -> `Validator` -> `Executor` -> `DatabaseStorage` -> `Persistent Engine Store`)
 
 ```
-                  SQL STUDENT STUDIO
-                          │
-                          ▼
-                 Android Native App
-                          │
-                      Kotlin
-                          │
-                   Jetpack Compose
-                          │
-               ┌──────────┴──────────┐
-               │                     │
-         Application Layer       SQL Engine
-               │                     │
-             Room              Lexer / Parser
-               │                     │
-            SQLite             Validator
-               │                     │
-               │                 Executor
-               │                     │
-               └──────────┬──────────┘
-                          │
-                    Local Storage
+Android App
+│
+├── Application Layer
+│   ├── Jetpack Compose UI
+│   ├── ViewModel & Use Cases
+│   ├── Room DB
+│   └── SQLite (App Metadata)
+│
+└── SQL Student Engine (Standalone Pure Kotlin)
+    ├── Batch Processor (GO)
+    ├── Lexer
+    ├── Parser (Recursive Descent + Pratt)
+    ├── AST
+    ├── Validator
+    ├── Executor
+    ├── DatabaseStorage Abstraction
+    └── Persistent Engine Store (Student DB Files)
 ```
 
 ---
@@ -68,9 +66,9 @@
 
 Detailed architecture and design specifications are located in the [`docs/`](./docs) directory:
 
-- 📑 [`docs/architecture.md`](./docs/architecture.md) — Architectural principles & module layout.
+- 📑 [`docs/architecture.md`](./docs/architecture.md) — Architectural principles & standalone `sqlengine` module layout.
 - 📑 [`docs/sql-supported.md`](./docs/sql-supported.md) — T-SQL feature matrix & data types specification.
-- 📑 [`docs/database-model.md`](./docs/database-model.md) — Room metadata models & student database engine structures.
+- 📑 [`docs/database-model.md`](./docs/database-model.md) — Room metadata models, `SqlValue` types, and `DatabaseStorage` engine structures.
 - 📑 [`docs/ui.md`](./docs/ui.md) — Jetpack Compose UI layout, components & feature categorization.
 - 📑 [`docs/parser.md`](./docs/parser.md) — Lexer, Pratt & Recursive Descent parser, AST, `GO` batch processing & validator pipeline.
 - 📑 [`docs/testing.md`](./docs/testing.md) — Unit, integration, error diagnosis, and benchmark test suite.
@@ -112,4 +110,4 @@ GO
 
 ## 📜 License
 
-Designed & Developed for IT and Computer Science Students.
+License not yet selected.

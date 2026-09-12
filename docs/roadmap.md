@@ -1,48 +1,51 @@
 # Multi-PR Development Roadmap
 
 ## Strategy Overview
-Development proceeds incrementally across isolated Pull Requests. No PR should attempt to implement the entire application at once.
+Development proceeds incrementally across isolated Pull Requests. PR #5 is the final documentation and specification PR; PR #6 initiates physical code implementation.
 
 ---
 
 ## PR Sequence Plan
 
-### 📑 PR #5 (Current) — Documentation Correction & Alignment
+### 📑 PR #5 (Final Spec) — Documentation Correction & Final Specification
 - [x] Update `README.md` with official description, status legend, and project architecture.
-- [x] Align `docs/architecture.md` to single-module directory layout & dual DB strategy.
+- [x] Align `docs/architecture.md` to standalone `sqlengine` module layout & dual DB strategy.
 - [x] Align `docs/sql-supported.md` with explicit status codes (🟢 Implemented, 🟡 Planned, 🔴 Unsupported).
-- [x] Update `docs/database-model.md` (`DatabaseStorage` abstraction, `ConstraintModel`, composite FK).
-- [x] Update `docs/parser.md` (Batch Processor `GO`, Recursive Descent + Pratt Parser, `SqlError`).
+- [x] Update `docs/database-model.md` (`SqlValue`, `DatabaseStorage` abstraction, `ConstraintModel`, composite PK/FK).
+- [x] Update `docs/parser.md` (Batch Processor `GO`, Recursive Descent + Pratt Parser, complete AST nodes, `SqlError`).
 - [x] Categorize UI features in `docs/ui.md` (MVP vs Phase 2 vs Future).
 - [x] Define benchmark tests in `docs/testing.md` and detailed multi-PR roadmap in `docs/roadmap.md`.
 
 ---
 
-### 🧱 PR #6 — Android Kotlin Project & SQL Engine Foundation
-- Setup native Android project structure (`app/src/main/java/com/sqlstudentstudio/...`).
-- Configure Kotlin, Jetpack Compose, Navigation, ViewModel, and Room setup.
-- Implement core `SqlEngine` package interfaces, `SqlError` diagnostics, and initial `BatchProcessor`.
+### 🧱 PR #6 — Android Project & Standalone SQL Engine Setup
+- Create root Gradle project structure with `app` (Android) and `sqlengine` (Pure Kotlin) modules.
+- Ensure `sqlengine` compiles and executes unit tests independently on JVM without Android dependencies.
+- Configure Kotlin, Jetpack Compose, Navigation, ViewModel, and Room setup in `app`.
+- Implement `SqlEngine` package interfaces, `SqlError` diagnostics, and initial `BatchProcessor` skeleton.
 - Basic Home screen UI scaffold.
+- Verify first installable APK build.
 
 ---
 
-### 🔤 PR #7 — Lexer & Batch Processor
+### 🔤 PR #7 — Complete Lexer & Batch Processor
 - Complete Lexer implementation for T-SQL keywords, operators, identifiers, and literals.
-- String escaping support (`'Ali''s'`).
+- String escaping support (`'Ali''s'`) and bracket identifiers (`[Name]`).
+- `BatchProcessor` comment and string delimiter handling.
 - `BatchProcessorTest` & `LexerTest` suite.
 
 ---
 
 ### 🌳 PR #8 — Parser & AST Nodes
-- Recursive Descent Parser for statements.
+- Recursive Descent Parser for DDL/DML statements.
 - Pratt Parser for expression evaluation.
-- AST node representations (`TableReference`, `ColumnReference`, `Expression`).
-- `ParserTest` suite.
+- AST statement nodes (`InsertStatement`, `UpdateStatement`, `DeleteStatement`, `DropTableStatement`).
+- `ParserTest` & Golden AST test suite.
 
 ---
 
 ### 💾 PR #9 — Database & Table DDL Execution
-- `DatabaseStorage` engine implementation.
+- `DatabaseStorage` engine implementation and `Persistent Engine Store`.
 - `CREATE DATABASE`, `DROP DATABASE`, `USE`.
 - `CREATE TABLE`, `DROP TABLE`.
 - `DDLTest` suite.
@@ -50,7 +53,7 @@ Development proceeds incrementally across isolated Pull Requests. No PR should a
 ---
 
 ### 📥 PR #10 — Data Manipulation (INSERT & SELECT Engine)
-- `INSERT INTO` engine logic.
+- `INSERT INTO` engine logic with `SqlValue` mapping.
 - Basic `SELECT` projection & execution.
 - Baseline benchmark integration test pass.
 
@@ -64,8 +67,8 @@ Development proceeds incrementally across isolated Pull Requests. No PR should a
 ---
 
 ### 🔒 PR #12 — Integrity Constraints Engine
-- Primary Key uniqueness enforcement.
-- Foreign Key referential integrity.
+- Primary Key uniqueness enforcement (Single & Composite PK).
+- Foreign Key referential integrity (Single & Composite FK).
 - `NOT NULL`, `DEFAULT`, and `UNIQUE` checks.
 
 ---
