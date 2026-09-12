@@ -1,91 +1,100 @@
 # SQL Student Studio - System Architecture
 
 ## Overview
-**SQL Student Studio** is an offline-first Android application designed for IT and Computer Science students who do not own a PC. It simulates a database development environment similar to Microsoft SQL Server Management Studio (SSMS), enabling students to practice T-SQL and manage relational databases on Android devices.
+**SQL Student Studio** is an offline-first T-SQL learning environment designed for Android students studying IT and Computer Science who do not own a PC. It provides an SSMS-inspired experience on mobile devices without attempting to run Microsoft SQL Server natively on Android.
 
-The application does NOT run Microsoft SQL Server natively. Instead, it embeds a custom educational SQL Engine (Lexer, Parser, AST, Validator, Execution Engine, Storage Layer) alongside an Android UI built with **Kotlin** and **Jetpack Compose**, with **Room / SQLite** handling local application metadata.
+---
 
-## Architectural Decision & Principles
+## 🏛️ Architectural Principles & Decoupling
 
-### 1. Separation of Concerns
-The SQL Engine is decoupled from the Android UI layer:
+### 1. Standalone Pure Kotlin SQL Engine
+The SQL Engine is decoupled from Android UI, Activities, Context, Compose, and Room. It is a pure Kotlin implementation that can be compiled and unit tested independently.
+
+### 2. Dual Database Architecture
+The application maintains two distinct database systems:
+- **Application Database (Room / SQLite)**: Stores app metadata (projects, scripts, query history, settings, workspace state).
+- **Student SQL Engine (Custom Educational Engine)**: Implements database concepts, T-SQL execution, schema management, data types, constraints, and local engine storage abstraction. Student data is never dumped directly into Room as a quick shortcut.
 
 ```
-                  SQL STUDENT STUDIO
-                          │
-                          ▼
-                 Android Native App
-                          │
-                      Kotlin
-                          │
-                   Jetpack Compose
-                          │
-               ┌──────────┴──────────┐
-               │                     │
-         Application Layer       SQL Engine
-               │                     │
-             Room              Lexer / Parser
-               │                     │
-            SQLite             Validator
-               │                     │
-               │                 Executor
-               │                     │
-               └──────────┬──────────┘
-                          │
-                    Local Storage
+UI (Jetpack Compose)
+       │
+       ▼
+   ViewModel
+       │
+       ▼
+   Use Cases
+       │
+ ┌─────┴───────────────┐
+ ▼                     ▼
+Repositories       SqlEngine
+ │                     │
+ ▼                     ▼
+Room              Engine Storage (DatabaseStorage)
+ │
+ ▼
+SQLite
 ```
 
-- **SQL Engine (`sqlengine/`)**: Pure Kotlin module (UI-independent). Responsible for lexing, parsing T-SQL, AST building, semantic validation, execution, and local storage state.
-- **Android App (`app/`)**: Jetpack Compose UI, ViewModels, Room DAOs for application metadata (projects, settings, saved scripts, query history).
+---
 
-### 2. Execution Flow
-```
-SQL Text Input (Editor)
-         ↓
-  Batch Processor (GO Detector)
-         ↓
-   Lexer (Tokens)
-         ↓
- Parser (Abstract Syntax Tree)
-         ↓
-  Validator (Schema Check)
-         ↓
-Execution Engine (Thread / Coroutine)
-         ↓
- Storage Layer (SQLite / Internal Storage)
-         ↓
- Result Set & Messages Grid
-```
-
-## Module Structure
+## 📁 Source Directory Layout
 
 ```
 SQL-Student-Studio/
 │
 ├── app/
-│   └── ui/
-│       ├── home/          # Home screen, project list, recent scripts
-│       ├── explorer/      # SSMS-like Database Tree Explorer
-│       ├── editor/        # SQL Query Editor with IntelliSense & Highlighting
-│       ├── results/       # Data result grids & messages
-│       ├── files/         # Script file manager
-│       ├── project/       # Project creation & settings
-│       ├── diagram/       # ER Diagram visualization
-│       └── settings/      # App preferences & theme configuration
+│   └── src/
+│       ├── main/
+│       │   ├── java/com/sqlstudentstudio/app/
+│       │   │   ├── ui/          # Jetpack Compose UI (screens, theme, components)
+│       │   │   ├── domain/      # Domain models & Use Cases
+│       │   │   ├── data/        # Room Database, DAOs, Repositories
+│       │   │   ├── sqlengine/   # Pure Kotlin T-SQL Engine (Lexer, Parser, AST, Storage)
+│       │   │   ├── intellisense/# Schema-aware suggestion provider
+│       │   │   ├── formatter/   # SQL code formatter
+│       │   │   ├── export/      # Import / Export (.sql, .csv, .json, .zip)
+│       │   │   └── backup/      # Project zip backup & restore
+│       │   │
+│       │   └── res/             # Android Resources
+│       │
+│       ├── test/                # Local JVM Unit Tests (Engine & ViewModels)
+│       └── androidTest/         # Instrumented Android & UI Tests
 │
-├── domain/                # Use cases & business logic
-├── data/                  # Room DAOs, repositories, local storage
-├── sqlengine/
-│   ├── lexer/             # SQL Tokenizer
-│   ├── parser/            # T-SQL Parser & AST construction
-│   ├── ast/               # Abstract Syntax Tree nodes
-│   ├── validator/         # Semantic validation (tables, columns, types, constraints)
-│   ├── executor/          # Query execution engine & context
-│   ├── datatype/          # Supported data types (INT, VARCHAR, DATETIME, etc.)
-│   └── error/             # Detailed SQL error mapping
-│
-├── intellisense/          # Schema-aware autocomplete provider
-├── formatter/             # SQL code beautifier
-├── export/                # Import/Export engine (.sql, .csv, .json, .zip)
-└── docs/                  # Architecture & feature documentation
+├── docs/                        # Specifications & Architecture Documentation
+├── gradle/
+├── build.gradle.kts
+├── settings.gradle.kts
+└── README.md
+```
+
+---
+
+## ⚙️ SQL Engine Pipeline
+
+```
+SQL Text
+   │
+   ▼
+Batch Processor (Splits raw script by GO separators)
+   │
+   ▼
+Lexer (Tokenizes SQL keywords, operators, identifiers, literals)
+   │
+   ▼
+Parser (Recursive Descent Parser + Pratt Expression Parser)
+   │
+   ▼
+Abstract Syntax Tree (AST)
+   │
+   ▼
+Semantic Validator (Type checking, schema validation, constraint checks)
+   │
+   ▼
+Executor (Evaluates AST against DatabaseStorage context)
+   │
+   ▼
+DatabaseStorage Engine Abstraction
+   │
+   ▼
+QueryResult (Rows, affected count, execution time, messages, errors)
 ```

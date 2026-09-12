@@ -1,37 +1,71 @@
-# Database & Metadata Data Models
+# Engine Storage & Database Data Models
 
 ## Overview
-SQL Student Studio uses a dual-layer data model:
-1. **Application Metadata Model (Room DB)**: Stores projects, settings, script files, query history, database metadata, and ERD configurations.
-2. **Student Database Engine Model**: In-memory and local SQLite representation of student databases, tables, columns, rows, and constraints.
+SQL Student Studio separates application management models (stored in Room) from student database engine models (managed via `DatabaseStorage` interface).
 
-## Room Entities (Metadata)
+---
 
-### 1. `ProjectEntity`
-- `id`: String (UUID, Primary Key)
-- `name`: String
-- `createdAt`: Long (Timestamp)
-- `updatedAt`: Long (Timestamp)
-- `description`: String?
+## 1. Application Storage (Room Database)
 
-### 2. `ScriptFileEntity`
-- `id`: String (UUID, Primary Key)
-- `projectId`: String (Foreign Key to Project)
-- `fileName`: String
-- `content`: String (SQL code)
-- `updatedAt`: Long (Timestamp)
+Room manages application-level metadata and workspace history:
 
-### 3. `QueryHistoryEntity`
-- `id`: Long (Auto-increment Primary Key)
-- `projectId`: String
-- `queryText`: String
-- `executedAt`: Long
-- `executionDurationMs`: Long
-- `isSuccess`: Boolean
-- `errorMessage`: String?
+```kotlin
+@Entity(tableName = "projects")
+data class ProjectEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val description: String?,
+    val createdAt: Long,
+    val updatedAt: Long
+)
 
-## Student Database Model (`sqlengine`)
+@Entity(tableName = "script_files")
+data class ScriptFileEntity(
+    @PrimaryKey val id: String,
+    val projectId: String,
+    val fileName: String,
+    val content: String,
+    val updatedAt: Long
+)
 
+@Entity(tableName = "query_history")
+data class QueryHistoryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val projectId: String,
+    val queryText: String,
+    val executedAt: Long,
+    val executionDurationMs: Long,
+    val isSuccess: Boolean,
+    val errorMessage: String?
+)
+
+@Entity(tableName = "app_settings")
+data class AppSettingsEntity(
+    @PrimaryKey val key: String,
+    val value: String
+)
+```
+
+---
+
+## 2. Student Database Engine Models (`sqlengine`)
+
+### Storage Interface Abstraction
+```kotlin
+interface DatabaseStorage {
+    fun createDatabase(dbName: String)
+    fun dropDatabase(dbName: String)
+    fun getDatabase(dbName: String): DatabaseModel?
+    fun createTable(dbName: String, table: TableModel)
+    fun dropTable(dbName: String, schema: String, tableName: String)
+    fun insertRows(dbName: String, schema: String, tableName: String, rows: List<Map<String, Any?>>)
+    fun selectRows(dbName: String, schema: String, tableName: String): List<Map<String, Any?>>
+    fun updateRows(dbName: String, schema: String, tableName: String, predicate: (Map<String, Any?>) -> Boolean, updates: Map<String, Any?>): Int
+    fun deleteRows(dbName: String, schema: String, tableName: String, predicate: (Map<String, Any?>) -> Boolean): Int
+}
+```
+
+### Hierarchy & Constraint Models
 ```kotlin
 data class DatabaseModel(
     val name: String,
@@ -47,24 +81,47 @@ data class TableModel(
     val name: String,
     val schema: String = "dbo",
     val columns: MutableList<ColumnModel>,
-    val primaryKey: List<String> = emptyList(),
-    val foreignKeys: List<ForeignKeyModel> = emptyList(),
+    val constraints: MutableList<ConstraintModel> = mutableListOf(),
     val rows: MutableList<Map<String, Any?>> = mutableListOf()
 )
 
 data class ColumnModel(
     val name: String,
     val dataType: DataType,
-    val isNullable: Boolean = true,
-    val isPrimaryKey: Boolean = false,
-    val isIdentity: Boolean = false,
+    val nullable: Boolean = true,
+    val identity: Boolean = false,
     val defaultValue: String? = null
 )
 
-data class ForeignKeyModel(
-    val constraintName: String,
-    val columnName: String,
-    val referencedTable: String,
-    val referencedColumn: String
-)
+sealed interface ConstraintModel {
+    val name: String?
+
+    data class PrimaryKeyConstraint(
+        override val name: String?,
+        val columns: List<String>
+    ) : ConstraintModel
+
+    data class ForeignKeyConstraint(
+        override val name: String?,
+        val columns: List<String>,
+        val referencedTable: String,
+        val referencedColumns: List<String>
+    ) : ConstraintModel
+
+    data class UniqueConstraint(
+        override val name: String?,
+        val columns: List<String>
+    ) : ConstraintModel
+
+    data class DefaultConstraint(
+        override val name: String?,
+        val column: String,
+        val defaultValueExpression: String
+    ) : ConstraintModel
+
+    data class CheckConstraint(
+        override val name: String?,
+        val expression: String
+    ) : ConstraintModel
+}
 ```

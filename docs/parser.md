@@ -1,72 +1,123 @@
-# Lexer, Parser & Execution Pipeline
+# Lexer, Parser & AST Pipeline Specification
 
 ## Overview
-The SQL Engine parses and executes T-SQL input without relying on external cloud servers or PC environments.
-
-## Pipeline Architecture
+The SQL Engine parses T-SQL code through a multi-stage execution pipeline:
 
 ```
-SQL Script String
+Raw SQL Script String
        │
        ▼
-Batch Processor (Detects GO separators)
-       │
-       ▼  (List of Batch SQL Strings)
- Lexer / Tokenizer
-       │
-       ▼  (List of Tokens: Keywords, Identifiers, Literals, Symbols)
- Parser (Recursive Descent / Pratt Parser)
-       │
-       ▼  (Abstract Syntax Tree - AST)
- Semantic Validator (Schema Provider check)
-       │
-       ▼  (Validated AST)
- Execution Engine (Evaluates AST against Local Storage Context)
+Batch Processor (Pre-lexer split by GO directive)
        │
        ▼
- Query Result (Rows, Affected Count, Messages, Errors)
+Lexer / Tokenizer (Tokens & Escaped Strings)
+       │
+       ▼
+Parser (Recursive Descent + Pratt Expression Parser)
+       │
+       ▼
+Abstract Syntax Tree (AST)
+       │
+       ▼
+Semantic Validator & Schema Verification
+       │
+       ▼
+Executor & Storage Abstraction Engine
 ```
 
-## Batch Processor & `GO` Directive
-SQL Server uses `GO` to delimit batches of SQL statements:
-- The Batch Processor splits raw SQL script text by `GO` tokens (case-insensitive on isolated lines).
-- Each batch is parsed and executed sequentially within the current transaction context.
+---
 
-## Lexer Tokens (`sqlengine/lexer`)
-- **Keywords**: `SELECT`, `FROM`, `WHERE`, `INSERT`, `INTO`, `VALUES`, `UPDATE`, `SET`, `DELETE`, `CREATE`, `DATABASE`, `TABLE`, `GO`, `JOIN`, `ON`, `GROUP`, `BY`, `HAVING`, `ORDER`, `ASC`, `DESC`.
-- **Identifiers**: `Students`, `dbo.Doctors`, `[Age]`
-- **Literals**: `'Ahmed'`, `20`, `3.14`, `1` (Bit)
-- **Operators & Delimiters**: `=`, `<>`, `>`, `<`, `>=`, `<=`, `,`, `;`, `(`, `)`
+## 1. Batch Processor (`GO` Separator)
+The Batch Processor operates before the Lexer:
+- Case-insensitive matching for isolated `GO` tokens (`GO`, `go`, `Go`).
+- Strips leading/trailing whitespace around batch delimiters.
+- Ignores `GO` inside string literals (`'SELECT ''GO'';'`) or line comments.
+- Returns an ordered list of executable SQL batch strings.
 
-## AST Structure (`sqlengine/ast`)
+---
+
+## 2. Lexer & String Escaping (`sqlengine/lexer`)
+Converts batch text into tokens:
+- **Keywords**: `SELECT`, `FROM`, `WHERE`, `INSERT`, `INTO`, `VALUES`, `UPDATE`, `SET`, `DELETE`, `CREATE`, `DATABASE`, `TABLE`, `DROP`, `ALTER`, `USE`, `DISTINCT`, `TOP`, `ORDER`, `BY`, `ASC`, `DESC`, `GROUP`, `HAVING`, `JOIN`, `INNER`, `LEFT`, `ON`, `AND`, `OR`, `NOT`, `LIKE`, `IN`, `BETWEEN`, `IS`, `NULL`, `PRIMARY`, `KEY`, `FOREIGN`, `REFERENCES`, `UNIQUE`, `DEFAULT`, `CHECK`, `AS`.
+- **Operators**: `=`, `<>`, `!=`, `>`, `<`, `>=`, `<=`, `+`, `-`, `*`, `/`, `%`.
+- **Symbols**: `(`, `)`, `,`, `;`, `.`, `[`, `]`.
+- **Identifiers**: Standard identifiers (`Students`, `dbo.Students`) and bracketed identifiers (`[Student Name]`).
+- **String Escaping**: T-SQL single quote escaping (`'Ali''s'`) resolves to the string value `Ali's`.
+
+---
+
+## 3. Parser Architecture (`sqlengine/parser`)
+- **Top-Level Statements**: Parsed using **Recursive Descent Parser**.
+- **Expressions (WHERE, HAVING, COMPUTED)**: Parsed using **Pratt Expression Parser** to handle operator precedence (`AND`, `OR`, `=`, `>=`, `LIKE`, arithmetic).
+
+### Table & Column References
 ```kotlin
-sealed class SqlStatement
+data class TableReference(
+    val schema: String?,
+    val table: String,
+    val alias: String?
+)
 
-data class CreateDatabaseStatement(val dbName: String) : SqlStatement()
+data class ColumnReference(
+    val schema: String? = null,
+    val table: String? = null,
+    val columnName: String
+)
+```
+
+### Abstract Syntax Tree (AST)
+```kotlin
+sealed interface SqlStatement
+
+data class CreateDatabaseStatement(val dbName: String) : SqlStatement
+data class UseDatabaseStatement(val dbName: String) : SqlStatement
+data class DropDatabaseStatement(val dbName: String) : SqlStatement
 
 data class CreateTableStatement(
-    val tableName: String,
+    val tableRef: TableReference,
     val columns: List<ColumnDefinition>,
-    val constraints: List<TableConstraint>
-) : SqlStatement()
+    val constraints: List<ConstraintModel>
+) : SqlStatement
 
 data class SelectStatement(
     val isDistinct: Boolean = false,
     val top: Int? = null,
     val columns: List<SelectColumn>,
-    val fromTable: String,
-    val joins: List<JoinClause> = emptyList(),
+    val fromTable: TableReference?,
     val whereClause: Expression? = null,
-    val groupBy: List<String> = emptyList(),
-    val having: Expression? = null,
     val orderBy: List<OrderByClause> = emptyList()
-) : SqlStatement()
+) : SqlStatement
 ```
 
-## Error Handling & Diagnosis
-Detailed errors report precise location and helpful suggestions:
+---
+
+## 4. Error Diagnostic System (`SqlError`)
+Structured diagnostic errors provide exact positioning and actionable feedback:
+
+```kotlin
+data class SqlError(
+    val code: String,
+    val category: ErrorCategory,
+    val message: String,
+    val line: Int,
+    val column: Int,
+    val suggestion: String? = null
+)
+
+enum class ErrorCategory {
+    LEXER_ERROR,
+    PARSER_ERROR,
+    SEMANTIC_ERROR,
+    TYPE_ERROR,
+    CONSTRAINT_ERROR,
+    EXECUTION_ERROR,
+    STORAGE_ERROR
+}
 ```
-❌ Syntax Error: Incorrect syntax near 'FORM'.
-Line 1, Column 10
+
+Example Output:
+```
+❌ SQL001: Syntax Error
+Line 1, Column 10: Incorrect syntax near 'FORM'.
 Suggestion: Did you mean 'FROM'?
 ```

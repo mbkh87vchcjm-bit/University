@@ -1,50 +1,57 @@
 # Supported SQL / T-SQL Feature Specification
 
 ## Overview
-SQL Student Studio focuses on educational T-SQL features commonly taught in introductory and intermediate university database courses.
+Status definitions used across SQL Student Studio documentation:
 
-## T-SQL Support Matrix
+| Status Code | Meaning |
+|---|---|
+| 🟢 **Implemented** | Feature is fully implemented and covered by unit/integration tests in code. |
+| 🟡 **Planned** | Feature specified and scheduled for upcoming development phases. |
+| 🔵 **Partial** | Partial capability currently supported in engine. |
+| 🔴 **Unsupported** | Out of scope for current releases. |
+
+---
+
+## T-SQL Feature Matrix
 
 | Category | Command / Feature | Status | Notes |
 |---|---|---|---|
-| **Database DDL** | `CREATE DATABASE` | ✅ Supported | Creates a database workspace |
-| | `DROP DATABASE` | ✅ Supported | Deletes a database workspace |
-| | `USE <database>` | ✅ Supported | Switches active context |
-| **Table DDL** | `CREATE TABLE` | ✅ Supported | Column types, NULL/NOT NULL, PK/FK |
-| | `ALTER TABLE` | ✅ Supported | Add/Drop column |
-| | `DROP TABLE` | ✅ Supported | Drops table from schema |
-| **DML** | `INSERT INTO` | ✅ Supported | Single & Multi-row inserts |
-| | `SELECT` | ✅ Supported | Projection, Filtering, Aggregation |
-| | `UPDATE` | ✅ Supported | Value updates with WHERE clause |
-| | `DELETE` | ✅ Supported | Row deletions with WHERE clause |
-| **Filtering & Operators** | `=, <>, >, <, >=, <=` | ✅ Supported | Comparison operators |
-| | `AND, OR, NOT` | ✅ Supported | Logical operators |
-| | `LIKE, IN, BETWEEN` | ✅ Supported | Pattern matching & range filtering |
-| | `IS NULL / IS NOT NULL` | ✅ Supported | Nullability checks |
-| **Query Clauses** | `TOP (N)` | ✅ Supported | Row limiting (T-SQL syntax) |
-| | `DISTINCT` | ✅ Supported | Duplicate suppression |
-| | `ORDER BY (ASC / DESC)` | ✅ Supported | Sorting results |
-| | `GROUP BY / HAVING` | ✅ Supported | Grouping & post-aggregation filtering |
-| **Joins** | `INNER JOIN` | ✅ Supported | Basic multi-table joining |
-| | `LEFT JOIN` | ✅ Supported | Outer joining |
-| | `RIGHT JOIN / FULL JOIN` | 🟡 Planned (V1.5) | Advanced outer joins |
-| **Batch Separator** | `GO` | ✅ Supported | Script batch splitting |
-| **Constraints** | `PRIMARY KEY` | ✅ Supported | Uniqueness & non-null enforcement |
-| | `FOREIGN KEY` | ✅ Supported | Referential integrity |
-| | `NOT NULL`, `DEFAULT`, `UNIQUE` | ✅ Supported | Data integrity checks |
-| | `CHECK` | 🟡 Partial | Basic evaluation |
-| **Data Types** | `INT`, `BIGINT`, `SMALLINT` | ✅ Supported | Numeric types |
-| | `DECIMAL`, `FLOAT` | ✅ Supported | Floating point / exact numeric |
-| | `VARCHAR`, `NVARCHAR`, `CHAR` | ✅ Supported | String types |
-| | `DATE`, `DATETIME`, `TIME` | ✅ Supported | Temporal types |
-| | `BIT` | ✅ Supported | Boolean representation |
-| **Programmability** | `VIEWS` | 🟡 Phase 2 | Basic View creation |
-| | `STORED PROCEDURES` | 🟡 Phase 2 | Parameterized scripts |
-| | `TRIGGERS` | ❌ Not Supported | Out of initial scope |
+| **Database DDL** | `CREATE DATABASE` | 🟡 Planned (MVP) | Database creation |
+| | `DROP DATABASE` | 🟡 Planned (MVP) | Database deletion |
+| | `USE <database>` | 🟡 Planned (MVP) | Switches active database context |
+| **Table DDL** | `CREATE TABLE` | 🟡 Planned (MVP) | Column definitions, constraints, default schema (`dbo`) |
+| | `DROP TABLE` | 🟡 Planned (MVP) | Table deletion |
+| | `ALTER TABLE` | 🟡 Planned (Phase 3) | Add/Drop column support in Phase 3 |
+| **DML** | `INSERT INTO` | 🟡 Planned (MVP) | Single and multi-row insertions |
+| | `SELECT` | 🟡 Planned (MVP) | Projection, filtering, sorting, distinct, top |
+| | `UPDATE` | 🟡 Planned (MVP) | Row updates with WHERE filtering |
+| | `DELETE` | 🟡 Planned (MVP) | Row deletions with WHERE filtering |
+| **Filtering & Operators** | `=, <>, !=, >, <, >=, <=` | 🟡 Planned (MVP) | Comparison operators |
+| | `AND, OR, NOT` | 🟡 Planned (MVP) | Logical operators |
+| | `LIKE, IN, BETWEEN` | 🟡 Planned (MVP) | Pattern matching & range filtering |
+| | `IS NULL / IS NOT NULL` | 🟡 Planned (MVP) | Nullability evaluation |
+| **Result Controls** | `TOP (N)` | 🟡 Planned (MVP) | Row limit (T-SQL syntax) |
+| | `DISTINCT` | 🟡 Planned (MVP) | Duplicate suppression |
+| | `ORDER BY (ASC / DESC)` | 🟡 Planned (MVP) | Result sorting |
+| **Batch Separator** | `GO` | 🟡 Planned (MVP) | Batch separator pre-processor |
+| **Constraints** | `PRIMARY KEY` | 🟡 Planned (MVP) | Single & composite primary keys |
+| | `FOREIGN KEY` | 🟡 Planned (MVP) | Referential integrity constraints |
+| | `NOT NULL` | 🟡 Planned (MVP) | Nullability constraint |
+| | `DEFAULT` | 🟡 Planned (MVP) | Default value expression |
+| | `UNIQUE` | 🟡 Planned (MVP) | Unique constraint |
+| | `CHECK` | 🟡 Planned (Phase 3) | Expression constraint check |
+| **Joins & Aggregates** | `INNER JOIN`, `LEFT JOIN` | 🟡 Planned (Phase 2) | Joins planned for post-MVP |
+| | `GROUP BY / HAVING` | 🟡 Planned (Phase 2) | Grouping and aggregate filtering |
+| | `COUNT, SUM, AVG, MIN, MAX` | 🟡 Planned (Phase 2) | Standard aggregate functions |
+| **Programmability** | `VIEWS` | 🟡 Planned (Phase 3) | Views support |
+| | `STORED PROCEDURES` | 🔴 Unsupported | Outside current scope |
+| | `TRIGGERS` | 🔴 Unsupported | Outside current scope |
 
-## Data Types Supported in Engine
+---
+
+## SQL Data Types (MVP Baseline)
 1. **Integer Types**: `INT`, `BIGINT`, `SMALLINT`, `TINYINT`
-2. **Decimal Types**: `DECIMAL(p, s)`, `FLOAT`
-3. **String Types**: `VARCHAR(n)`, `NVARCHAR(n)`, `CHAR(n)`, `NCHAR(n)`
+2. **Decimal / Numeric**: `DECIMAL(p,s)`, `FLOAT`
+3. **Character / String**: `VARCHAR(n)`, `NVARCHAR(n)`, `CHAR(n)`, `NCHAR(n)`
 4. **DateTime Types**: `DATE`, `DATETIME`, `TIME`
-5. **Boolean/Bit**: `BIT`
+5. **Bit / Boolean**: `BIT`
