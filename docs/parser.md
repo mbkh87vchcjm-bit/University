@@ -37,7 +37,7 @@ The Batch Processor operates before the Lexer:
 
 ---
 
-## 2. Lexer & Identifiers (`sqlengine/lexer`)
+## 2. Lexer & Identifiers (`lib/sql_engine/lexer/`)
 
 ### Case Insensitivity Rules
 - All SQL keywords, functions, and object identifiers (`Students`, `students`, `STUDENTS`) are **case-insensitive** during resolution, while preserving original casing for display purposes.
@@ -50,77 +50,140 @@ The Batch Processor operates before the Lexer:
 
 ### String Escaping & Literals
 - T-SQL single quote escaping (`'Ali''s'`) resolves to string value `Ali's`.
-- Keyword `NULL` tokenizes to `SqlValue.Null`.
+- Keyword `NULL` tokenizes to `SqlValue.nullValue()`.
 
 ---
 
-## 3. Parser Architecture (`sqlengine/parser`)
+## 3. Parser Architecture (`lib/sql_engine/parser/`)
 - **Statements**: Parsed using **Recursive Descent Parser**.
-- **Expressions**: Parsed using **Pratt Expression Parser** to handle operator precedence (`AND`, `OR`, `NOT`, `=`, `<>`, `>`, `<`, `>=`, `<=`, `LIKE`, `IN`, `BETWEEN`, `+`, `-`, `*`, `/`).
+- **Expressions**: Parsed using **Pratt Expression Parser** to handle operator precedence (`()`, `NOT`, `*`, `/`, `+`, `-`, comparison, `LIKE`, `IN`, `BETWEEN`, `IS NULL`, `AND`, `OR`).
 
 ### LIKE Pattern Semantics
 - `%`: Matches zero or more arbitrary characters.
 - `_`: Matches exactly one single character.
 
 ### Table & Column References
-```kotlin
-data class TableReference(
-    val schema: String? = "dbo",
-    val table: String,
-    val alias: String? = null
-)
+```dart
+class TableReference {
+  final String schema;
+  final String table;
+  final String? alias;
 
-data class ColumnReference(
-    val schema: String? = null,
-    val table: String? = null,
-    val columnName: String
-)
+  const TableReference({
+    this.schema = 'dbo',
+    required this.table,
+    this.alias,
+  });
+}
+
+class ColumnReference {
+  final String? schema;
+  final String? table;
+  final String columnName;
+
+  const ColumnReference({
+    this.schema,
+    this.table,
+    required this.columnName,
+  });
+}
 ```
 
-### Complete AST Statement Nodes
-```kotlin
-sealed interface SqlStatement
+### Complete AST Statement Nodes (Dart)
+```dart
+sealed class SqlStatement {
+  const SqlStatement();
+}
 
-data class CreateDatabaseStatement(val dbName: String) : SqlStatement
-data class UseDatabaseStatement(val dbName: String) : SqlStatement
-data class DropDatabaseStatement(val dbName: String) : SqlStatement
+class CreateDatabaseStatement extends SqlStatement {
+  final String dbName;
+  const CreateDatabaseStatement(this.dbName);
+}
 
-data class CreateTableStatement(
-    val tableRef: TableReference,
-    val columns: List<ColumnDefinition>,
-    val constraints: List<ConstraintModel>
-) : SqlStatement
+class UseDatabaseStatement extends SqlStatement {
+  final String dbName;
+  const UseDatabaseStatement(this.dbName);
+}
 
-data class DropTableStatement(val tableRef: TableReference) : SqlStatement
+class DropDatabaseStatement extends SqlStatement {
+  final String dbName;
+  const DropDatabaseStatement(this.dbName);
+}
 
-data class InsertStatement(
-    val tableRef: TableReference,
-    val columns: List<String> = emptyList(),
-    val valuesList: List<List<Expression>>
-) : SqlStatement
+class CreateTableStatement extends SqlStatement {
+  final TableReference tableRef;
+  final List<ColumnModel> columns;
+  final List<ConstraintModel> constraints;
 
-data class SelectStatement(
-    val isDistinct: Boolean = false,
-    val top: Int? = null,
-    val columns: List<SelectColumn>,
-    val fromTable: TableReference?,
-    val joins: List<JoinClause> = emptyList(),
-    val whereClause: Expression? = null,
-    val groupBy: List<Expression> = emptyList(),
-    val having: Expression? = null,
-    val orderBy: List<OrderByClause> = emptyList()
-) : SqlStatement
+  const CreateTableStatement({
+    required this.tableRef,
+    required this.columns,
+    this.constraints = const [],
+  });
+}
 
-data class UpdateStatement(
-    val tableRef: TableReference,
-    val assignments: Map<String, Expression>,
-    val whereClause: Expression? = null
-) : SqlStatement
+class DropTableStatement extends SqlStatement {
+  final TableReference tableRef;
+  const DropTableStatement(this.tableRef);
+}
 
-data class DeleteStatement(
-    val tableRef: TableReference,
-    val whereClause: Expression? = null
-) : SqlStatement
+class InsertStatement extends SqlStatement {
+  final TableReference tableRef;
+  final List<String> columns;
+  final List<List<Expression>> valuesList;
+
+  const InsertStatement({
+    required this.tableRef,
+    this.columns = const [],
+    required this.valuesList,
+  });
+}
+
+class SelectStatement extends SqlStatement {
+  final bool isDistinct;
+  final int? top;
+  final List<SelectColumn> columns;
+  final TableReference? fromTable;
+  final List<JoinClause> joins;
+  final Expression? whereClause;
+  final List<Expression> groupBy;
+  final Expression? having;
+  final List<OrderByClause> orderBy;
+
+  const SelectStatement({
+    this.isDistinct = false,
+    this.top,
+    required this.columns,
+    this.fromTable,
+    this.joins = const [],
+    this.whereClause,
+    this.groupBy = const [],
+    this.having,
+    this.orderBy = const [],
+  });
+}
+
+class UpdateStatement extends SqlStatement {
+  final TableReference tableRef;
+  final Map<String, Expression> assignments;
+  final Expression? whereClause;
+
+  const UpdateStatement({
+    required this.tableRef,
+    required this.assignments,
+    this.whereClause,
+  });
+}
+
+class DeleteStatement extends SqlStatement {
+  final TableReference tableRef;
+  final Expression? whereClause;
+
+  const DeleteStatement({
+    required this.tableRef,
+    this.whereClause,
+  });
+}
 ```
 
 ---
@@ -138,30 +201,39 @@ data class DeleteStatement(
 ## 5. Error Diagnostic System (`SqlError`)
 Structured diagnostic errors provide exact positioning and actionable feedback:
 
-```kotlin
-data class SqlError(
-    val code: String,
-    val category: ErrorCategory,
-    val message: String,
-    val line: Int,
-    val column: Int,
-    val suggestion: String? = null
-)
+```dart
+enum ErrorCategory {
+  lexerError,
+  parserError,
+  semanticError,
+  typeError,
+  constraintError,
+  executionError,
+  storageError,
+}
 
-enum class ErrorCategory {
-    LEXER_ERROR,
-    PARSER_ERROR,
-    SEMANTIC_ERROR,
-    TYPE_ERROR,
-    CONSTRAINT_ERROR,
-    EXECUTION_ERROR,
-    STORAGE_ERROR
+class SqlError implements Exception {
+  final String code;
+  final ErrorCategory category;
+  final String message;
+  final int line;
+  final int column;
+  final String? suggestion;
+
+  const SqlError({
+    required this.code,
+    required this.category,
+    required this.message,
+    required this.line,
+    required this.column,
+    this.suggestion,
+  });
 }
 ```
 
 Example Output:
 ```
-❌ SQL001: Syntax Error
+❌ SQL001: PARSERERROR
 Line 1, Column 10: Incorrect syntax near 'FORM'.
 Suggestion: Did you mean 'FROM'?
 ```

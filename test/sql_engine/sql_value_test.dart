@@ -8,7 +8,7 @@ void main() {
       final null2 = SqlValue.nullValue();
 
       expect(null1, equals(null2));
-      expect(null1.toString(), equals('NULL'));
+      expect(null1.toSqlLiteral(), equals('NULL'));
     });
 
     test('SqlInt equality and string representation', () {
@@ -18,15 +18,22 @@ void main() {
 
       expect(val1, equals(val2));
       expect(val1, isNot(equals(val3)));
-      expect(val1.toString(), equals('42'));
+      expect(val1.toSqlLiteral(), equals('42'));
     });
 
-    test('SqlString equality and escaping representation', () {
-      final str1 = SqlValue.string("Ali's");
-      final str2 = SqlValue.string("Ali's");
+    test('SqlDecimal canonical string equality and literal representation', () {
+      final dec1 = SqlValue.decimal('123.456');
+      final dec2 = SqlValue.decimal('123.456');
 
-      expect(str1, equals(str2));
-      expect(str1.toString(), equals("'Ali's'"));
+      expect(dec1, equals(dec2));
+      expect(dec1.toSqlLiteral(), equals('123.456'));
+    });
+
+    test('SqlString escaping in toSqlLiteral', () {
+      final str = SqlString("Ali's");
+
+      expect(str.value, equals("Ali's"));
+      expect(str.toSqlLiteral(), equals("'Ali''s'"));
     });
   });
 }

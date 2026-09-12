@@ -1,73 +1,94 @@
 # Engine Storage & Database Data Models
 
 ## Overview
-SQL Student Studio separates application metadata models (stored in Room) from student database engine models (managed via `DatabaseStorage` and `Persistent Engine Store`).
+SQL Student Studio separates application metadata models (stored in local SQLite / local storage) from student database engine models (managed via `DatabaseStorage` and `Persistent Engine Store`).
 
 ---
 
-## 1. Application Storage (Room Database)
+## 1. Application Metadata Models (Dart)
 
-Room manages application-level metadata and workspace history:
+The application layer manages project workspaces, saved scripts, and query history:
 
-```kotlin
-@Entity(tableName = "projects")
-data class ProjectEntity(
-    @PrimaryKey val id: String,
-    val name: String,
-    val description: String?,
-    val createdAt: Long,
-    val updatedAt: Long
-)
+```dart
+class ProjectModel {
+  final String id;
+  final String name;
+  final String? description;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-@Entity(tableName = "script_files")
-data class ScriptFileEntity(
-    @PrimaryKey val id: String,
-    val projectId: String,
-    val fileName: String,
-    val content: String,
-    val updatedAt: Long
-)
+  const ProjectModel({
+    required this.id,
+    required this.name,
+    this.description,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+}
 
-@Entity(tableName = "query_history")
-data class QueryHistoryEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val projectId: String,
-    val queryText: String,
-    val executedAt: Long,
-    val executionDurationMs: Long,
-    val isSuccess: Boolean,
-    val errorMessage: String?
-)
+class ScriptFileModel {
+  final String id;
+  final String projectId;
+  final String fileName;
+  final String content;
+  final DateTime updatedAt;
 
-@Entity(tableName = "app_settings")
-data class AppSettingsEntity(
-    @PrimaryKey val key: String,
-    val value: String
-)
+  const ScriptFileModel({
+    required this.id,
+    required this.projectId,
+    required this.fileName,
+    required this.content,
+    required this.updatedAt,
+  });
+}
+
+class QueryHistoryModel {
+  final int id;
+  final String projectId;
+  final String queryText;
+  final DateTime executedAt;
+  final int executionDurationMs;
+  final bool isSuccess;
+  final String? errorMessage;
+
+  const QueryHistoryModel({
+    required this.id,
+    required this.projectId,
+    required this.queryText,
+    required this.executedAt,
+    required this.executionDurationMs,
+    required this.isSuccess,
+    this.errorMessage,
+  });
+}
 ```
 
 ---
 
-## 2. Student Database Engine Models (`sqlengine`)
+## 2. Student Database Engine Models (`lib/sql_engine/`)
 
 ### Strongly-Typed Value Abstraction (`SqlValue`)
 To prevent type-erasure issues with comparison, sorting, equality, aggregations, and NULL handling, all engine values strictly implement `SqlValue`:
 
-```kotlin
-sealed interface SqlValue {
-    data object Null : SqlValue
-    data class IntValue(val value: Int) : SqlValue
-    data class LongValue(val value: Long) : SqlValue
-    data class DecimalValue(val value: BigDecimal) : SqlValue
-    data class DoubleValue(val value: Double) : SqlValue
-    data class StringValue(val value: String) : SqlValue
-    data class BooleanValue(val value: Boolean) : SqlValue
-    data class DateValue(val value: LocalDate) : SqlValue
-    data class DateTimeValue(val value: LocalDateTime) : SqlValue
-    data class TimeValue(val value: LocalTime) : SqlValue
+```dart
+sealed class SqlValue {
+  const SqlValue();
+
+  factory SqlValue.nullValue() = SqlNull;
+  factory SqlValue.integer(int value) = SqlInt;
+  factory SqlValue.bigInt(int value) = SqlBigInt;
+  factory SqlValue.smallInt(int value) = SqlSmallInt;
+  factory SqlValue.tinyInt(int value) = SqlTinyInt;
+  factory SqlValue.decimal(String value) = SqlDecimal;
+  factory SqlValue.float(double value) = SqlFloat;
+  factory SqlValue.string(String value) = SqlString;
+  factory SqlValue.boolean(bool value) = SqlBoolean;
+  factory SqlValue.dateTime(DateTime value) = SqlDateTime;
+
+  String toSqlLiteral();
 }
 
-typealias Row = Map<String, SqlValue>
+typedef SqlRow = Map<String, SqlValue>;
 ```
 
 ---
@@ -75,27 +96,27 @@ typealias Row = Map<String, SqlValue>
 ### Storage Interface Abstraction (`DatabaseStorage`)
 `DatabaseStorage` provides clean query and raw mutation methods for the Engine.
 
-**Crucial Architecture Requirement**: The `Executor` and `ExpressionEvaluator` components are exclusively responsible for parsing, evaluating `WHERE` clauses, evaluating predicates, and calculating update values. `DatabaseStorage` does **not** accept or execute Kotlin lambdas, predicates, or evaluation logic; it purely accepts evaluated row subsets provided directly by the Executor.
+**Crucial Architecture Requirement**: The `Executor` and `ExpressionEvaluator` components are exclusively responsible for parsing, evaluating `WHERE` clauses, evaluating predicates, and calculating update values. `DatabaseStorage` does **not** accept or execute Dart lambdas, predicates, or evaluation logic; it purely accepts evaluated row subsets provided directly by the Executor.
 
-```kotlin
-interface DatabaseStorage {
-    fun createDatabase(dbName: String)
-    fun dropDatabase(dbName: String)
-    fun getDatabase(dbName: String): DatabaseModel?
-    fun listDatabases(): List<String>
+```dart
+abstract interface class DatabaseStorage {
+  void createDatabase(String dbName);
+  void dropDatabase(String dbName);
+  DatabaseModel? getDatabase(String dbName);
+  List<String> listDatabases();
 
-    fun createTable(dbName: String, table: TableModel)
-    fun dropTable(dbName: String, schema: String, tableName: String)
-    fun getTable(dbName: String, schema: String, tableName: String): TableModel?
-    fun listTables(dbName: String, schema: String = "dbo"): List<String>
+  void createTable(String dbName, TableModel table);
+  void dropTable(String dbName, String schema, String tableName);
+  TableModel? getTable(String dbName, String schema, String tableName);
+  List<String> listTables(String dbName, {String schema = 'dbo'});
 
-    fun insertRows(dbName: String, schema: String, tableName: String, rows: List<Row>)
-    fun selectRows(dbName: String, schema: String, tableName: String): List<Row>
-    fun updateRows(dbName: String, schema: String, tableName: String, targetRows: List<Row>, updates: Map<String, SqlValue>): Int
-    fun deleteRows(dbName: String, schema: String, tableName: String, targetRows: List<Row>): Int
+  void insertRows(String dbName, String schema, String tableName, List<SqlRow> rows);
+  List<SqlRow> selectRows(String dbName, String schema, String tableName);
+  int updateRows(String dbName, String schema, String tableName, List<SqlRow> targetRows, Map<String, SqlValue> updates);
+  int deleteRows(String dbName, String schema, String tableName, List<SqlRow> targetRows);
 
-    fun persistState()
-    fun restoreState()
+  Future<void> persistState();
+  Future<void> restoreState();
 }
 ```
 
@@ -104,76 +125,112 @@ interface DatabaseStorage {
 ### Schema, Table & Constraint Models
 
 #### Single Source of Truth for DEFAULT Constraints
-Default values are specified exclusively via `DefaultConstraint(column, expression)`. To prevent duplicate or conflicting definitions, `ColumnModel` does not contain a raw `defaultValue` string field.
+Default values are specified exclusively via `DefaultConstraint(column, expressionSql)`. To prevent duplicate or conflicting definitions, `ColumnModel` does not contain a raw `defaultValue` string field.
 
-```kotlin
-data class DatabaseModel(
-    val name: String,
-    val schemas: MutableMap<String, SchemaModel> = mutableMapOf("dbo" to SchemaModel("dbo"))
-)
+```dart
+class DatabaseModel {
+  final String name;
+  final Map<String, SchemaModel> schemas;
 
-data class SchemaModel(
-    val name: String,
-    val tables: MutableMap<String, TableModel> = mutableMapOf()
-)
+  DatabaseModel({required this.name, Map<String, SchemaModel>? schemas})
+      : schemas = schemas ?? {'dbo': SchemaModel(name: 'dbo')};
+}
 
-data class TableModel(
-    val name: String,
-    val schema: String = "dbo",
-    val columns: MutableList<ColumnModel>,
-    val constraints: MutableList<ConstraintModel> = mutableListOf(),
-    val rows: MutableList<Row> = mutableListOf()
-)
+class SchemaModel {
+  final String name;
+  final Map<String, TableModel> tables;
 
-data class ColumnModel(
-    val name: String,
-    val dataType: DataType,
-    val nullable: Boolean = true,
-    val identity: Boolean = false
-)
+  SchemaModel({required this.name, Map<String, TableModel>? tables})
+      : tables = tables ?? {};
+}
 
-sealed interface ConstraintModel {
-    val name: String?
+class TableModel {
+  final String name;
+  final String schema;
+  final List<ColumnModel> columns;
+  final List<ConstraintModel> constraints;
+  final List<SqlRow> rows;
 
-    data class PrimaryKeyConstraint(
-        override val name: String?,
-        val columns: List<String>
-    ) : ConstraintModel
+  TableModel({
+    required this.name,
+    this.schema = 'dbo',
+    required this.columns,
+    List<ConstraintModel>? constraints,
+    List<SqlRow>? rows,
+  })  : constraints = constraints ?? [],
+        rows = rows ?? [];
+}
 
-    data class ForeignKeyConstraint(
-        override val name: String?,
-        val columns: List<String>,
-        val referencedTable: String,
-        val referencedColumns: List<String>
-    ) : ConstraintModel {
-        init {
-            require(columns.size == referencedColumns.size) {
-                "Foreign Key column count must match referenced column count."
-            }
-        }
+class ColumnModel {
+  final String name;
+  final SqlDataType dataType;
+  final bool isNullable;
+  final bool isIdentity;
+
+  const ColumnModel({
+    required this.name,
+    required this.dataType,
+    this.isNullable = true,
+    this.isIdentity = false,
+  });
+}
+
+sealed class ConstraintModel {
+  final String? name;
+  const ConstraintModel(this.name);
+}
+
+class PrimaryKeyConstraint extends ConstraintModel {
+  final List<String> columns;
+  const PrimaryKeyConstraint({String? name, required this.columns}) : super(name);
+}
+
+class ForeignKeyConstraint extends ConstraintModel {
+  final List<String> columns;
+  final String referencedTable;
+  final List<String> referencedColumns;
+
+  ForeignKeyConstraint({
+    String? name,
+    required this.columns,
+    required this.referencedTable,
+    required this.referencedColumns,
+  }) : super(name) {
+    if (columns.length != referencedColumns.length) {
+      throw ArgumentError('Foreign key source and referenced column counts must match.');
     }
+  }
+}
 
-    data class UniqueConstraint(
-        override val name: String?,
-        val columns: List<String>
-    ) : ConstraintModel
+class UniqueConstraint extends ConstraintModel {
+  final List<String> columns;
+  const UniqueConstraint({String? name, required this.columns}) : super(name);
+}
 
-    data class DefaultConstraint(
-        override val name: String?,
-        val column: String,
-        val expression: Expression
-    ) : ConstraintModel
+class DefaultConstraint extends ConstraintModel {
+  final String column;
+  final String expressionSql; // Default expression AST
 
-    data class CheckConstraint(
-        override val name: String?,
-        val expression: Expression
-    ) : ConstraintModel
+  const DefaultConstraint({
+    String? name,
+    required this.column,
+    required this.expressionSql,
+  }) : super(name);
+}
+
+class CheckConstraint extends ConstraintModel {
+  final String expressionSql; // Check expression AST
+
+  const CheckConstraint({
+    String? name,
+    required this.expressionSql,
+  }) : super(name);
 }
 ```
 
 ---
 
 ## 3. Persistence Strategy for Student Database Engine
-To ensure student databases survive application restarts without polluting Room:
-- Student database instances, schemas, tables, constraints, and rows are stored in JSON/binary format inside the application's internal files directory (`context.filesDir/student_db/`).
+To ensure student databases survive application restarts:
+- Student database instances, schemas, tables, constraints, and rows are stored in JSON/binary format inside the application's local document storage directory.
 - Calling `persistState()` serializes `DatabaseStorage` state to disk; calling `restoreState()` loads it back into memory upon app launch.

@@ -1,27 +1,25 @@
 # Testing Strategy & Validation Benchmark
 
 ## Overview
-SQL Student Studio emphasizes rigorous testing of the SQL Engine separately from Android UI components inside the standalone `sqlengine` module.
+SQL Student Studio emphasizes rigorous testing of the SQL Engine separately from Flutter UI components inside the standalone `lib/sql_engine/` structure.
 
 ---
 
-## Test Suites Layout
+## Test Suites Layout (Dart)
 
 ```
-sqlengine/src/test/kotlin/com/sqlstudentstudio/sqlengine/
-├── BatchProcessorTest.kt   # GO batch delimiter, string, comment & empty batch tests
-├── LexerTest.kt            # Tokenization, string escaping ('Ali''s'), bracket identifiers
-├── ParserTest.kt           # AST parsing & Golden AST verification
-├── AstTest.kt              # AST node structure & mapping
-├── ValidatorTest.kt        # Semantic, schema & case-insensitivity validation
-├── ExecutorTest.kt         # Engine execution & result verification
-├── ConstraintTest.kt       # Single/Composite PK, FK, Unique, Default, Nullability tests
-├── StorageTest.kt          # DatabaseStorage & Persistent Engine Store tests
-└── ErrorTest.kt            # SqlError positioning & suggestion tests
-
-app/src/test/java/com/sqlstudentstudio/app/
-├── QueryEditorViewModelTest.kt
-└── DatabaseExplorerViewModelTest.kt
+test/
+├── sql_engine/
+│   ├── batch_processor_test.dart   # GO batch delimiter, string, comment & empty batch tests
+│   ├── lexer_test.dart             # Tokenization, string escaping ('Ali''s'), bracket identifiers
+│   ├── parser_test.dart            # AST parsing & Golden AST verification
+│   ├── validator_test.dart         # Semantic, schema & case-insensitivity validation
+│   ├── executor_test.dart          # Engine execution & result verification
+│   ├── constraint_test.dart        # Single/Composite PK, FK, Unique, Default, Nullability tests
+│   ├── storage_test.dart           # DatabaseStorage & Persistent Engine Store tests
+│   └── error_test.dart             # SqlError positioning & suggestion tests
+│
+└── widget_test.dart                # HomeScreen and App UI widget tests
 ```
 
 ---
@@ -79,7 +77,7 @@ GO
 ## Essential Core Engine Test Cases
 
 ### 1. NULL Handling Test
-- Validates insertion, selection, and predicate evaluation (`IS NULL`, `IS NOT NULL`, equality comparisons) for `SqlValue.Null`.
+- Validates insertion, selection, and predicate evaluation (`IS NULL`, `IS NOT NULL`, equality comparisons) for `SqlValue.nullValue()`.
 
 ### 2. Batch Processor Edge Cases
 - Empty batch strings or multiple consecutive `GO` tokens execute cleanly without error.
@@ -90,7 +88,7 @@ GO
 - Verifies that composite primary keys (`PRIMARY KEY (CourseID, StudentID)`) allow matching individual IDs while rejecting duplicate combined pairs.
 
 ### 4. Composite Foreign Key Validation
-- Ensures foreign key definitions validate that source column count matches referenced column count (`columns.size == referencedColumns.size`).
+- Ensures foreign key definitions validate that source column count matches referenced column count (`columns.length == referencedColumns.length`).
 
 ### 5. DEFAULT Constraint Evaluation
 - Verifies that when a column with a `DefaultConstraint` is omitted from the `INSERT INTO` column list, the evaluated default expression is automatically supplied.
@@ -101,32 +99,31 @@ GO
 INSERT INTO Students (ID, Name, Age)
 VALUES ('invalid', 'Ahmed', 20);
 ```
-- **Atomicity Assertion**: A failed `INSERT` statement must abort immediately with a `TYPE_ERROR` and leave zero partial row mutations in `DatabaseStorage`.
+- **Atomicity Assertion**: A failed `INSERT` statement must abort immediately with a `typeError` category `SqlError` and leave zero partial row mutations in `DatabaseStorage`.
 
 ---
 
-## Golden AST Test Specification
+## Golden AST Test Specification (Dart)
 Parser tests must include Golden AST verification comparing parsed output against explicit AST data structures:
 
-```kotlin
-@Test
-fun testSelectStatementGoldenAst() {
-    val sql = "SELECT ID, Name FROM Students WHERE Age >= 20;"
-    val ast = Parser(Lexer(sql).tokenize()).parseStatement()
+```dart
+test('testSelectStatementGoldenAst', () {
+  const sql = "SELECT ID, Name FROM Students WHERE Age >= 20;";
+  final ast = Parser(Lexer(sql).tokenize()).parseStatement();
 
-    val expectedAst = SelectStatement(
-        columns = listOf(
-            SelectColumn.Simple(ColumnReference(columnName = "ID")),
-            SelectColumn.Simple(ColumnReference(columnName = "Name"))
-        ),
-        fromTable = TableReference(schema = "dbo", table = "Students"),
-        whereClause = BinaryExpression(
-            left = ColumnExpression("Age"),
-            operator = BinaryOperator.GREATER_THAN_OR_EQUAL,
-            right = LiteralExpression(SqlValue.IntValue(20))
-        )
-    )
+  final expectedAst = SelectStatement(
+    columns: const [
+      SelectColumn.simple(ColumnReference(columnName: 'ID')),
+      SelectColumn.simple(ColumnReference(columnName: 'Name')),
+    ],
+    fromTable: const TableReference(schema: 'dbo', table: 'Students'),
+    whereClause: BinaryExpression(
+      left: const ColumnExpression('Age'),
+      operator: BinaryOperator.greaterThanOrEqual,
+      right: LiteralExpression(SqlValue.integer(20)),
+    ),
+  );
 
-    assertEquals(expectedAst, ast)
-}
+  expect(ast, equals(expectedAst));
+});
 ```

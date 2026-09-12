@@ -10,11 +10,14 @@ sealed class SqlValue {
   factory SqlValue.bigInt(int value) = SqlBigInt;
   factory SqlValue.smallInt(int value) = SqlSmallInt;
   factory SqlValue.tinyInt(int value) = SqlTinyInt;
-  factory SqlValue.decimal(double value) = SqlDecimal;
+  factory SqlValue.decimal(String value) = SqlDecimal;
   factory SqlValue.float(double value) = SqlFloat;
   factory SqlValue.string(String value) = SqlString;
   factory SqlValue.boolean(bool value) = SqlBoolean;
   factory SqlValue.dateTime(DateTime value) = SqlDateTime;
+
+  /// Returns the standard T-SQL literal string representation.
+  String toSqlLiteral();
 }
 
 final class SqlNull extends SqlValue {
@@ -25,6 +28,9 @@ final class SqlNull extends SqlValue {
 
   @override
   int get hashCode => 0;
+
+  @override
+  String toSqlLiteral() => 'NULL';
 
   @override
   String toString() => 'NULL';
@@ -41,6 +47,9 @@ final class SqlInt extends SqlValue {
   int get hashCode => value.hashCode;
 
   @override
+  String toSqlLiteral() => value.toString();
+
+  @override
   String toString() => value.toString();
 }
 
@@ -53,6 +62,9 @@ final class SqlBigInt extends SqlValue {
 
   @override
   int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() => value.toString();
 
   @override
   String toString() => value.toString();
@@ -69,6 +81,9 @@ final class SqlSmallInt extends SqlValue {
   int get hashCode => value.hashCode;
 
   @override
+  String toSqlLiteral() => value.toString();
+
+  @override
   String toString() => value.toString();
 }
 
@@ -83,11 +98,14 @@ final class SqlTinyInt extends SqlValue {
   int get hashCode => value.hashCode;
 
   @override
+  String toSqlLiteral() => value.toString();
+
+  @override
   String toString() => value.toString();
 }
 
 final class SqlDecimal extends SqlValue {
-  final double value;
+  final String value; // Canonical exact decimal string representation
   const SqlDecimal(this.value);
 
   @override
@@ -97,7 +115,10 @@ final class SqlDecimal extends SqlValue {
   int get hashCode => value.hashCode;
 
   @override
-  String toString() => value.toString();
+  String toSqlLiteral() => value;
+
+  @override
+  String toString() => value;
 }
 
 final class SqlFloat extends SqlValue {
@@ -109,6 +130,9 @@ final class SqlFloat extends SqlValue {
 
   @override
   int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() => value.toString();
 
   @override
   String toString() => value.toString();
@@ -125,7 +149,13 @@ final class SqlString extends SqlValue {
   int get hashCode => value.hashCode;
 
   @override
-  String toString() => "'$value'";
+  String toSqlLiteral() {
+    final escaped = value.replaceAll("'", "''");
+    return "'$escaped'";
+  }
+
+  @override
+  String toString() => value;
 }
 
 final class SqlBoolean extends SqlValue {
@@ -137,6 +167,9 @@ final class SqlBoolean extends SqlValue {
 
   @override
   int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() => value ? '1' : '0';
 
   @override
   String toString() => value ? '1' : '0';
@@ -151,6 +184,9 @@ final class SqlDateTime extends SqlValue {
 
   @override
   int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() => "'${value.toIso8601String()}'";
 
   @override
   String toString() => value.toIso8601String();

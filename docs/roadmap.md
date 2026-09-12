@@ -1,15 +1,15 @@
 # Multi-PR Development Roadmap
 
 ## Strategy Overview
-Development proceeds incrementally across isolated Pull Requests. PR #5 is the final documentation and specification PR; PR #6 initiates physical code implementation.
+Development proceeds incrementally across isolated Pull Requests. PR #5 is the final documentation and specification PR; PR #6 initiates physical code implementation in Dart & Flutter.
 
 ---
 
 ## PR Sequence Plan
 
-### 📑 PR #5 (Final Spec) — Documentation Correction & Final Specification
+### 📑 PR #5 (Final Spec) — Foundation & Architecture Correction
 - [x] Update `README.md` with official description, status legend, and project architecture.
-- [x] Align `docs/architecture.md` to standalone `sqlengine` module layout & dual DB strategy.
+- [x] Align `docs/architecture.md` to standalone `lib/sql_engine/` module layout & dual DB strategy.
 - [x] Align `docs/sql-supported.md` with explicit status codes (🟢 Implemented, 🟡 Planned, 🔴 Unsupported).
 - [x] Update `docs/database-model.md` (`SqlValue`, `DatabaseStorage` abstraction, `ConstraintModel`, composite PK/FK).
 - [x] Update `docs/parser.md` (Batch Processor `GO`, Recursive Descent + Pratt Parser, complete AST nodes, `SqlError`).
@@ -18,13 +18,12 @@ Development proceeds incrementally across isolated Pull Requests. PR #5 is the f
 
 ---
 
-### 🧱 PR #6 — Android Project & Standalone SQL Engine Setup
-- Create root Gradle project structure with `app` (Android) and `sqlengine` (Pure Kotlin) modules.
-- Ensure `sqlengine` compiles and executes unit tests independently on JVM without Android dependencies.
-- Configure Kotlin, Jetpack Compose, Navigation, ViewModel, and Room setup in `app`.
-- Implement `SqlEngine` package interfaces, `SqlError` diagnostics, and initial `BatchProcessor` skeleton.
-- Basic Home screen UI scaffold.
-- Verify first installable APK build.
+### 🧱 PR #6 — Flutter App & Standalone SQL Engine Setup
+- Create Flutter project structure (`lib/app/`, `lib/core/`, `lib/features/`, `lib/sql_engine/`).
+- Ensure `lib/sql_engine/` compiles and executes unit tests independently on Dart VM without Flutter dependencies.
+- Implement `SqlEngine` package interfaces, `SqlError` diagnostics, and initial `BatchProcessor`.
+- Basic Home screen UI scaffold (`lib/features/home/home_screen.dart`).
+- Verify unit tests (`BatchProcessorTest`, `SqlValueTest`, `widget_test.dart`).
 
 ---
 
@@ -45,7 +44,7 @@ Development proceeds incrementally across isolated Pull Requests. PR #5 is the f
 ---
 
 ### 💾 PR #9 — Database & Table DDL Execution
-- `DatabaseStorage` engine implementation and `Persistent Engine Store` (`context.filesDir/student_db/`).
+- `DatabaseStorage` engine implementation and local document persistent store.
 - `CREATE DATABASE`, `DROP DATABASE`, `USE`.
 - `CREATE TABLE`, `DROP TABLE`.
 - `DDLTest` suite.
@@ -94,7 +93,7 @@ Development proceeds incrementally across isolated Pull Requests. PR #5 is the f
 ---
 
 ### 🛠️ PR #16 — Visual Table Designer
-- Jetpack Compose Table Designer grid generating `CREATE TABLE` DDL.
+- Flutter Table Designer grid generating `CREATE TABLE` DDL.
 
 ---
 
