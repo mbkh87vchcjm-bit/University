@@ -16,22 +16,24 @@ The application maintains two distinct database systems:
 - **Student SQL Engine (Custom Educational Engine)**: Implements T-SQL database concepts, schema management, data types, constraints, AST evaluation, and local engine storage abstraction via `DatabaseStorage` and `Persistent Engine Store` (decoupled from Flutter UI).
 
 ```
-Flutter Application Layer
+Flutter Application Layer (Implemented PR #5 Foundation)
 │
 ├── App Layout (lib/app/, lib/core/, lib/features/)
-│   ├── Navigation & Theme
-│   ├── Home, Projects, Explorer, Editor, Results
+│   ├── Navigation & Theme (Implemented Foundation)
+│   ├── HomeScreen UI Scaffold (Implemented Foundation)
 │   └── App Storage (SQLite Metadata)
 │
-└── SQL Student Engine (Standalone Pure Dart - lib/sql_engine/)
-    ├── Batch Processor (GO)
-    ├── Lexer
-    ├── Parser (Recursive Descent + Pratt)
-    ├── AST Statement & Expression Nodes
-    ├── Semantic Validator
-    ├── Execution Engine
-    ├── DatabaseStorage Abstraction
-    └── Persistent Engine Store (Student DB State)
+└── SQL Student Engine (Pure Dart - lib/sql_engine/)
+    ├── Batch Processor (GO) [🟢 Implemented PR #5]
+    ├── SqlValue Types & SqlError [🟢 Implemented PR #5]
+    ├── TableModel & ConstraintModel [🟢 Implemented PR #5]
+    ├── DatabaseStorage Abstraction [🟢 Implemented PR #5]
+    ├── Lexer [🟡 Planned PR #7]
+    ├── Parser (Recursive Descent + Pratt) [🟡 Planned PR #8]
+    ├── AST Statement & Expression Nodes [🟡 Planned PR #8]
+    ├── Semantic Validator [🟡 Planned PR #9]
+    ├── Execution Engine [🟡 Planned PR #10]
+    └── Persistent Student DB Store [🟡 Planned PR #9]
 ```
 
 ---
@@ -42,75 +44,73 @@ Flutter Application Layer
 SQL-Student-Studio/
 │
 ├── lib/
-│   ├── main.dart                # Application entry point
+│   ├── main.dart                # Application entry point [Implemented PR #5]
 │   │
-│   ├── app/                     # App configuration (theme, router, app widget)
+│   ├── app/                     # App configuration [Implemented PR #5]
 │   │   ├── app.dart
 │   │   ├── router.dart
 │   │   └── theme.dart
 │   │
-│   ├── core/                    # Core utilities, base storage, common widgets
-│   │   ├── errors/
-│   │   ├── storage/
-│   │   └── widgets/
+│   ├── core/                    # Core utilities & base storage [Implemented PR #5]
 │   │
-│   ├── features/                # Feature UI modules
-│   │   ├── home/
+│   ├── features/                # Feature UI modules [Scaffolded PR #5]
+│   │   ├── home/                # HomeScreen UI scaffold [Implemented PR #5]
 │   │   ├── projects/
 │   │   ├── explorer/
 │   │   ├── editor/
 │   │   └── results/
 │   │
-│   └── sql_engine/              # Standalone Pure Dart T-SQL Engine (No Flutter Dependencies)
-│       ├── lexer/               # GO Batch Processor, Lexer & String Escaper
-│       ├── parser/              # Recursive Descent & Pratt Expression Parser
-│       ├── ast/                 # Abstract Syntax Tree Nodes
-│       ├── validator/           # Semantic & Schema Validator
-│       ├── executor/            # Expression Evaluator & Execution Engine
-│       ├── types/               # SqlValue hierarchy & SQL data types
-│       ├── storage/             # DatabaseStorage & Persistent Engine Store
-│       └── errors/              # SqlError Diagnostic System
+│   └── sql_engine/              # Standalone Pure Dart T-SQL Engine
+│       ├── types/               # SqlValue hierarchy [🟢 Implemented PR #5]
+│       ├── models/              # TableModel, ColumnModel, ConstraintModel, StoredRow [🟢 Implemented PR #5]
+│       ├── storage/             # DatabaseStorage abstraction [🟢 Implemented PR #5]
+│       ├── errors/              # SqlError diagnostic model [🟢 Implemented PR #5]
+│       ├── lexer/               # GO Batch Processor [🟢 Implemented PR #5], Lexer [🟡 Planned PR #7]
+│       ├── parser/              # Recursive Descent & Pratt Parser [🟡 Planned PR #8]
+│       ├── ast/                 # Abstract Syntax Tree Nodes [🟡 Planned PR #8]
+│       ├── validator/           # Semantic Validator [🟡 Planned PR #9]
+│       └── executor/            # Execution Engine & Evaluator [🟡 Planned PR #10]
 │
 ├── test/                        # Unit and Widget Tests
-│   ├── sql_engine/
-│   └── features/
+│   ├── sql_engine/              # SqlValue, TableModel, BatchProcessor unit tests [🟢 Implemented PR #5]
+│   └── widget_test.dart         # HomeScreen widget test [🟢 Implemented PR #5]
 │
-├── docs/                        # Specifications & Architecture Documentation
-├── pubspec.yaml
+├── docs/                        # Specifications & Architecture Documentation [🟢 Implemented PR #5]
+├── pubspec.yaml                 # App identity & dependencies (`sql_student_studio`) [🟢 Implemented PR #5]
 └── README.md
 ```
 
 ---
 
-## ⚙️ SQL Engine Pipeline
+## ⚙️ SQL Engine Pipeline Execution Flow
 
 ```
 Raw SQL Text
    │
    ▼
-Batch Processor (Pre-lexer split by isolated GO directives)
+Batch Processor (Pre-lexer split by isolated GO directives) [🟢 Implemented PR #5]
    │
    ▼
-Lexer (Tokenizes SQL keywords, operators, identifiers, literals, escaped strings)
+Lexer (Tokenizes SQL keywords, operators, identifiers, literals, escaped strings) [🟡 Planned PR #7]
    │
    ▼
-Parser (Recursive Descent Parser for DDL/DML + Pratt Expression Parser for expressions)
+Parser (Recursive Descent Parser for DDL/DML + Pratt Expression Parser) [🟡 Planned PR #8]
    │
    ▼
-Abstract Syntax Tree (AST)
+Abstract Syntax Tree (AST) [🟡 Planned PR #8]
    │
    ▼
-Semantic Validator (Type checking, schema verification, constraint rules)
+Semantic Validator (Type checking, schema verification, constraint rules) [🟡 Planned PR #9]
    │
    ▼
-Executor (Evaluates AST expressions via ExpressionEvaluator)
+Executor (Evaluates AST expressions via ExpressionEvaluator) [🟡 Planned PR #10]
    │
    ▼
-DatabaseStorage Engine Abstraction
+DatabaseStorage Engine Abstraction [🟢 Implemented API PR #5]
    │
    ▼
-Persistent Engine Store (Saves student database state across app restarts)
+Persistent Engine Store (Saves student database state across app restarts) [🟡 Planned PR #9]
    │
    ▼
-QueryResult (Returned rows for SELECT, affected rows for INSERT/UPDATE/DELETE, execution duration, diagnostics)
+QueryResult (Returned rows for SELECT, affected rows for INSERT/UPDATE/DELETE, duration, diagnostics)
 ```
