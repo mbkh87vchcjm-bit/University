@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sql_student_studio/sql_engine/models/table_model.dart';
+import 'package:sql_student_studio/sql_engine/types/sql_type_spec.dart';
 import 'package:sql_student_studio/sql_engine/types/sql_value.dart';
 
 void main() {
@@ -34,6 +35,18 @@ void main() {
         referencedColumns: const ['ID'],
       );
       expect(validFk.columns.length, equals(validFk.referencedColumns.length));
+    });
+
+    test('ColumnModel preserves precision and scale type specification', () {
+      final column = ColumnModel(
+        name: 'Tuition',
+        dataType: SqlDataType.decimalType,
+        typeSpec: SqlTypeSpec.decimal(precision: 10, scale: 2),
+        isNullable: false,
+      );
+
+      expect(column.typeSpec?.displayName, 'DECIMAL(10, 2)');
+      expect(column.isNullable, isFalse);
     });
 
     test('StoredRow holds rowId and SqlRow map', () {
