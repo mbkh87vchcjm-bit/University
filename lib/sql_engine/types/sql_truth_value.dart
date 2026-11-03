@@ -6,6 +6,11 @@ enum SqlTruthValue {
   falseValue,
   unknown;
 
+  static SqlTruthValue fromNullableBool(bool? value) {
+    if (value == null) return SqlTruthValue.unknown;
+    return value ? SqlTruthValue.trueValue : SqlTruthValue.falseValue;
+  }
+
 }
 
 extension SqlTruthValueOperations on SqlTruthValue {
@@ -41,8 +46,5 @@ extension SqlTruthValueOperations on SqlTruthValue {
 
   bool passesWhere() => this == SqlTruthValue.trueValue;
 
-  static SqlTruthValue fromNullableBool(bool? value) {
-    if (value == null) return SqlTruthValue.unknown;
-    return value ? SqlTruthValue.trueValue : SqlTruthValue.falseValue;
-  }
+
 }
