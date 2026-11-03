@@ -33,6 +33,7 @@ class _AppShellState extends State<AppShell> {
       if (!mounted) return;
       setState(() {
         _projects = projects;
+        _activeProject ??= projects.isEmpty ? null : projects.first;
         _isLoading = false;
         _loadError = null;
       });
