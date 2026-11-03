@@ -592,7 +592,10 @@ class SqlTypeSystem {
     final minimum = DateTime(1900, 1, 1);
     final maximum = DateTime(2079, 6, 6, 23, 59, 0);
     var roundedMinute = value.minute;
-    if (value.second >= 30) roundedMinute++;
+    if (value.second > 29 ||
+        value.second == 29 && value.millisecond >= 999) {
+      roundedMinute++;
+    }
     final rounded = DateTime(
       value.year,
       value.month,
@@ -602,6 +605,36 @@ class SqlTypeSystem {
     );
     _checkDateRange(rounded, minimum, maximum, 'SMALLDATETIME');
     return rounded;
+  }
+
+  /// SQL DATETIME stores time in 1/300-second increments. Dart DateTime
+  /// carries millisecond precision, so this rounds the available input
+  /// precision to the nearest representable SQL DATETIME tick.
+  static DateTime _roundDateTime(DateTime value) {
+    final ticks = (value.millisecond * 300 / 1000).round();
+    final roundedMilliseconds = (ticks * 1000 / 300).round();
+    if (roundedMilliseconds >= 1000) {
+      return DateTime(
+        value.year,
+        value.month,
+        value.day,
+        value.hour,
+        value.minute,
+        value.second + 1,
+        0,
+        value.microsecond,
+      );
+    }
+    return DateTime(
+      value.year,
+      value.month,
+      value.day,
+      value.hour,
+      value.minute,
+      value.second,
+      roundedMilliseconds,
+      value.microsecond,
+    );
   }
 
   static void _checkDateRange(
@@ -630,7 +663,9 @@ class SqlTypeSystem {
     final hour = value.hour.toString().padLeft(2, '0');
     final minute = value.minute.toString().padLeft(2, '0');
     final second = value.second.toString().padLeft(2, '0');
-    final fraction = (value.millisecond * 10000).toString().padLeft(7, '0');
+    final hundredNanoseconds =
+        (value.millisecond * 1000 + value.microsecond) * 10;
+    final fraction = hundredNanoseconds.toString().padLeft(7, '0');
     return '$hour:$minute:$second.$fraction';
   }
 
