@@ -118,6 +118,14 @@ class SqlTypeSystem {
 
       case SqlTypeKind.floatType:
         final value = _toDouble(source, target.displayName);
+        if (target.precision! <= 24) {
+          final buffer = ByteData(4)..setFloat32(0, value, Endian.little);
+          final rounded = buffer.getFloat32(0, Endian.little);
+          if (!rounded.isFinite) {
+            _fail('SSS-TYPE-OVERFLOW', 'Value exceeds the selected FLOAT precision range.');
+          }
+          return SqlValue.float(rounded);
+        }
         return SqlValue.float(value);
 
       case SqlTypeKind.realType:
