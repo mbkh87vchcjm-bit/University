@@ -12,6 +12,7 @@ SQL Student Studio is an offline-first mobile learning environment. Its T-SQL en
 - Local SQLite metadata repository for workspace projects.
 - Create, list, open, delete-with-confirmation, and restore-most-recently-opened project metadata.
 - Light and dark themes, following the device system theme by default.
+- Persistent System/Light/Dark theme preference in versioned app metadata storage.
 - Honest planned-state screens for database exploration, SQL editing, and the learning academy.
 
 Workspace metadata is stored separately from student SQL database state. The current SQLite workspace table stores only project identity and timestamps; it does not yet persist database schemas, SQL tables, or rows.
