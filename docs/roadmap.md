@@ -168,8 +168,12 @@ Current implementation checkpoint:
 - Added a deliberately limited collation profile with case/accent and Arabic combining-mark test vectors.
 - Added tests for numeric boundaries, text lengths/code pages, binary values, temporal rounding, offset retention, NULL logic, and collation.
 - Extended column metadata to retain an optional precision/scale-aware type descriptor.
+- Added strict ISO-oriented date/time parsing that rejects normalized invalid calendar days and clock components.
+- Enforced the SQL Server DATE range from 0001-01-01 through 9999-12-31, including explicit boundary tests.
+- Corrected the supported numeric precedence direction and added regression tests.
 
-Phase 2 is still **in progress** until current-branch CI and all acceptance tests pass. The type layer is not yet wired into a SQL parser, DDL, DML, or a persistent student database.
+**Phase 2 acceptance: PASSED** on commit `532da4358e5ceb3222dca70951f93d5124790010`.
+The current-branch Flutter CI passed analysis and all 65 reported tests. The Android workflow passed debug and release APK builds and uploaded the release artifact. This accepts only the isolated type, conversion, NULL-logic, and collation foundations. They are still not wired into a SQL parser, DDL, DML, or a persistent student database.
 
 Acceptance:
 - Boundary and conversion tests cover the currently implemented type subset.
