@@ -18,6 +18,15 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
   static const _databaseName = 'sql_student_studio_workspace.db';
   static const _databaseVersion = 2;
 
+  final DatabaseFactory _factory;
+  final String? _databasePath;
+
+  SqliteWorkspaceRepository({
+    DatabaseFactory? factory,
+    String? databasePath,
+  })  : _factory = factory ?? databaseFactory,
+        _databasePath = databasePath;
+
   Database? _database;
   Future<Database>? _openingDatabase;
 
@@ -35,9 +44,9 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
   }
 
   Future<Database> _openDatabase() async {
-    final root = await getDatabasesPath();
-    return openDatabase(
-      p.join(root, _databaseName),
+    final path = _databasePath ?? p.join(await _factory.getDatabasesPath(), _databaseName);
+    return _factory.openDatabase(
+      path,
       version: _databaseVersion,
       onCreate: (db, version) async {
         await db.execute('''
