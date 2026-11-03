@@ -360,7 +360,7 @@ class SqlTypeSystem {
     );
   }
 
-  static const RegExp _decimalPattern =
+  static final RegExp _decimalPattern =
       RegExp(r'^([+-]?)(\d+)(?:\.(\d*))?$');
 
   static String _numericText(SqlValue value) {
@@ -714,7 +714,7 @@ class SqlTypeSystem {
     );
   }
 
-  static const RegExp _offsetSuffix =
+  static final RegExp _offsetSuffix =
       RegExp(r'(Z|[+-]\d{2}:\d{2})$', caseSensitive: false);
 
   static void _checkDateRange(
@@ -793,7 +793,7 @@ class SqlTypeSystem {
     return value;
   }
 
-  static const RegExp _timePattern =
+  static final RegExp _timePattern =
       RegExp(r'^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.(\d{1,7}))?$');
 
   static final RegExp _guidPattern = RegExp(
