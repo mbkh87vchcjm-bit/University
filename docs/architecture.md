@@ -1,116 +1,92 @@
-# SQL Student Studio - System Architecture
+# SQL Student Studio — Architecture
 
-## Overview
-**SQL Student Studio** is an offline-first T-SQL learning environment designed for Android students studying IT and Computer Science who do not own a PC. It provides an SSMS-inspired experience on mobile devices without attempting to run Microsoft SQL Server natively on Android.
+## Product boundary
 
----
+SQL Student Studio is an offline-first mobile learning environment. Its T-SQL engine is an educational simulator written in pure Dart; it is not the Microsoft SQL Server Database Engine and does not host a SQL Server service on Android.
 
-## 🏛️ Architectural Principles & Decoupling
+## Implemented application foundation
 
-### 1. Standalone Pure Dart SQL Engine
-The SQL Engine is decoupled from Flutter UI, Widgets, BuildContext, and Flutter packages. It is located in `lib/sql_engine/` as a pure Dart package structure that compiles and executes unit tests independently without UI dependencies.
+- Flutter / Material 3 application shell.
+- Arabic-first five-destination navigation.
+- Home workspace screen.
+- Local SQLite metadata repository for workspace projects.
+- Create, list, open, delete-with-confirmation, and restore-most-recently-opened project metadata.
+- Light and dark themes, following the device system theme by default.
+- Honest planned-state screens for database exploration, SQL editing, and the learning academy.
 
-### 2. Dual Database Architecture
-The application maintains two distinct database systems:
-- **Application Database (App Storage / SQLite)**: Stores app metadata (projects, scripts, query history, app settings, workspace state).
-- **Student SQL Engine (Custom Educational Engine)**: Implements T-SQL database concepts, schema management, data types, constraints, AST evaluation, and local engine storage abstraction via `DatabaseStorage` and `Persistent Engine Store` (decoupled from Flutter UI).
+Workspace metadata is stored separately from student SQL database state. The current SQLite workspace table stores only project identity and timestamps; it does not yet persist database schemas, SQL tables, or rows.
 
-```
-Flutter Application Layer (Implemented PR #5 Foundation)
-│
-├── App Layout (lib/app/, lib/core/, lib/features/)
-│   ├── Navigation & Theme (Implemented Foundation)
-│   ├── HomeScreen UI Scaffold (Implemented Foundation)
-│   └── App Storage (SQLite Metadata)
-│
-└── SQL Student Engine (Pure Dart - lib/sql_engine/)
-    ├── Batch Processor (GO) [🟢 Implemented PR #5]
-    ├── SqlValue Types & SqlError [🟢 Implemented PR #5]
-    ├── TableModel & ConstraintModel [🟢 Implemented PR #5]
-    ├── DatabaseStorage Abstraction [🟢 Implemented PR #5]
-    ├── Lexer [🟡 Planned PR #7]
-    ├── Parser (Recursive Descent + Pratt) [🟡 Planned PR #8]
-    ├── AST Statement & Expression Nodes [🟡 Planned PR #8]
-    ├── Semantic Validator [🟡 Planned PR #9]
-    ├── Execution Engine [🟡 Planned PR #10]
-    └── Persistent Student DB Store [🟡 Planned PR #9]
-```
+## Target architecture
 
----
-
-## 📁 Repository Directory Layout
-
-```
-SQL-Student-Studio/
-│
-├── lib/
-│   ├── main.dart                # Application entry point [Implemented PR #5]
-│   │
-│   ├── app/                     # App configuration [Implemented PR #5]
-│   │   ├── app.dart
-│   │   ├── router.dart
-│   │   └── theme.dart
-│   │
-│   ├── core/                    # Core utilities & base storage [Implemented PR #5]
-│   │
-│   ├── features/                # Feature UI modules [Scaffolded PR #5]
-│   │   ├── home/                # HomeScreen UI scaffold [Implemented PR #5]
-│   │   ├── projects/
-│   │   ├── explorer/
-│   │   ├── editor/
-│   │   └── results/
-│   │
-│   └── sql_engine/              # Standalone Pure Dart T-SQL Engine
-│       ├── types/               # SqlValue hierarchy [🟢 Implemented PR #5]
-│       ├── models/              # TableModel, ColumnModel, ConstraintModel, StoredRow [🟢 Implemented PR #5]
-│       ├── storage/             # DatabaseStorage abstraction [🟢 Implemented PR #5]
-│       ├── errors/              # SqlError diagnostic model [🟢 Implemented PR #5]
-│       ├── lexer/               # GO Batch Processor [🟢 Implemented PR #5], Lexer [🟡 Planned PR #7]
-│       ├── parser/              # Recursive Descent & Pratt Parser [🟡 Planned PR #8]
-│       ├── ast/                 # Abstract Syntax Tree Nodes [🟡 Planned PR #8]
-│       ├── validator/           # Semantic Validator [🟡 Planned PR #9]
-│       └── executor/            # Execution Engine & Evaluator [🟡 Planned PR #10]
-│
-├── test/                        # Unit and Widget Tests
-│   ├── sql_engine/              # SqlValue, TableModel, BatchProcessor unit tests [🟢 Implemented PR #5]
-│   └── widget_test.dart         # HomeScreen widget test [🟢 Implemented PR #5]
-│
-├── docs/                        # Specifications & Architecture Documentation [🟢 Implemented PR #5]
-├── pubspec.yaml                 # App identity & dependencies (`sql_student_studio`) [🟢 Implemented PR #5]
-└── README.md
+```text
+Flutter Presentation
+  Home | Databases | Query Editor | Results | Learn | More
+           |
+Application Services
+  Workspace Projects | Scripts | Lessons | Progress | Settings
+           |
+T-SQL Domain Engine (pure Dart)
+  Batch Processor -> Lexer -> Parser -> AST
+  Binder/Validator -> Types & Collation
+  Executor -> Transaction Coordinator -> Result/Diagnostics
+           |
+Storage Interfaces
+  In-memory test adapter | Persistent student database adapter
+           |
+Local Workspace
+  App metadata store | Student database catalog and row store
 ```
 
----
+Only the Flutter shell and workspace project metadata storage are implemented in the current Phase 1 work. The later engine stages in this diagram are target architecture, not currently available functionality.
 
-## ⚙️ SQL Engine Pipeline Execution Flow
+## Storage separation
 
+1. **Application workspace store:** project names, creation/open timestamps, settings, and later saved scripts and lesson progress.
+2. **Student database store:** later stores database catalogs, schemas, tables, columns, constraints, and rows. It will be introduced separately behind the `DatabaseStorage` interface.
+
+Do not store SQL student tables inside application project metadata records. The simulator must use explicit versioned migrations and atomic write operations.
+
+## Engine isolation
+
+The `lib/sql_engine/` domain layer must not import Flutter widgets, BuildContext, or presentation code. Storage must be injected through interfaces so that the same engine can use an in-memory adapter in tests and a persistent adapter in the application.
+
+## Current source layout
+
+```text
+lib/
+  app/                 # app configuration and theme
+  core/
+    models/            # workspace models
+    storage/           # application workspace repository
+  features/
+    common/            # planned-feature state component
+    home/              # workspace home
+    navigation/        # five-destination app shell
+  sql_engine/
+    errors/            # structured SQL diagnostic model
+    lexer/             # GO batch processor
+    models/            # database/table/constraint models
+    storage/           # student database storage interface
+    types/             # SQL value hierarchy
+test/
+  core/                # workspace model tests
+  sql_engine/          # SQL foundation tests
+  widget_test.dart     # application workflow tests
 ```
-Raw SQL Text
-   │
-   ▼
-Batch Processor (Pre-lexer split by isolated GO directives) [🟢 Implemented PR #5]
-   │
-   ▼
-Lexer (Tokenizes SQL keywords, operators, identifiers, literals, escaped strings) [🟡 Planned PR #7]
-   │
-   ▼
-Parser (Recursive Descent Parser for DDL/DML + Pratt Expression Parser) [🟡 Planned PR #8]
-   │
-   ▼
-Abstract Syntax Tree (AST) [🟡 Planned PR #8]
-   │
-   ▼
-Semantic Validator (Type checking, schema verification, constraint rules) [🟡 Planned PR #9]
-   │
-   ▼
-Executor (Evaluates AST expressions via ExpressionEvaluator) [🟡 Planned PR #10]
-   │
-   ▼
-DatabaseStorage Engine Abstraction [🟢 Implemented API PR #5]
-   │
-   ▼
-Persistent Engine Store (Saves student database state across app restarts) [🟡 Planned PR #9]
-   │
-   ▼
-QueryResult (Returned rows for SELECT, affected rows for INSERT/UPDATE/DELETE, duration, diagnostics)
-```
+
+## Data and failure handling
+
+- A malformed persisted project row must produce a controlled format error.
+- Failed local database initialization must be retryable.
+- Student data operations introduced in later phases must be atomic.
+- No SQL statement error may leave partial mutations.
+- The UI must preserve user-entered SQL when execution fails.
+- No fake query history or sample records may be presented as actual student activity.
+
+## Compatibility profile
+
+The initial target is SQL Server 2014 / compatibility level 120 for the stated university lab environment. Later SQL Server versions must use separate feature profiles. Unsupported later-version syntax must be rejected or explicitly explained, not silently accepted in the 2014 profile.
+
+## Quality gates
+
+Every phase updates its implementation status and tests. A phase is complete only when static analysis, relevant unit/widget/integration tests, Android debug/release builds, and the documented acceptance checks pass.
