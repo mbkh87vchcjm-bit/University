@@ -47,8 +47,9 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
     final path = _databasePath ?? p.join(await _factory.getDatabasesPath(), _databaseName);
     return _factory.openDatabase(
       path,
-      version: _databaseVersion,
-      onCreate: (db, version) async {
+      options: OpenDatabaseOptions(
+        version: _databaseVersion,
+        onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE workspace_projects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,20 +73,21 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
           'setting_value': 'system',
         });
       },
-      onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          await db.execute('''
-            CREATE TABLE app_settings (
-              setting_key TEXT PRIMARY KEY,
-              setting_value TEXT NOT NULL
-            )
-          ''');
-          await db.insert('app_settings', {
-            'setting_key': 'theme_mode',
-            'setting_value': 'system',
-          });
-        }
-      },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await db.execute('''
+              CREATE TABLE app_settings (
+                setting_key TEXT PRIMARY KEY,
+                setting_value TEXT NOT NULL
+              )
+            ''');
+            await db.insert('app_settings', {
+              'setting_key': 'theme_mode',
+              'setting_value': 'system',
+            });
+          }
+        },
+      ),
     );
   }
 
