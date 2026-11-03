@@ -34,15 +34,19 @@ These tests use sqflite_common_ffi and a temporary SQLite database file on the C
 - Student can open a project and delete it only after confirmation.
 - Theme selection updates the application preference through the repository interface.
 
-### SQL foundation tests
+### SQL foundation and phase 2 tests
 
 - BatchProcessor splits isolated GO separators with case-insensitive handling.
 - It ignores GO in quoted strings and comments.
 - It handles empty batches and CRLF line endings.
 - SqlValue literal formatting and basic equality are tested.
-- TableModel row ID allocation and foreign-key column-count validation are tested.
+- TableModel row ID allocation, foreign-key column-count validation, and optional column type metadata are tested.
+- SqlTypeSpec validates parameter ranges for DECIMAL/NUMERIC, FLOAT, CHAR/VARCHAR, NCHAR/NVARCHAR, BINARY/VARBINARY, TIME, DATETIME2, and DATETIMEOFFSET.
+- SqlTypeSystem tests integer boundaries, exact decimal rounding/overflow, MONEY/SMALLMONEY bounds, FLOAT/REAL finite values, BIT conversion, string length/code-page behavior, Unicode UTF-16 length, binary hex conversion/padding, date ranges, temporal rounding, GUID validation, and rejection of direct ROWVERSION assignment.
+- SqlTruthValue tests the full NOT/AND/OR three-valued truth tables and the TRUE-only WHERE filter rule.
+- SqlCollation tests case/accent profile behavior and the documented Arabic combining-mark subset.
 
-**Important:** SQL foundation tests do not indicate that complete T-SQL parsing, type conversion, SQL Server collation, DDL, or DML execution is implemented. Those are covered by later phases.
+**Important:** These are component-level foundations. They do not indicate that a complete T-SQL lexer/parser, SQL Server collation engine, CREATE/ALTER/DROP, INSERT/SELECT/UPDATE/DELETE, constraints, transactions, or persisted student database is implemented.
 
 ## 3. Required CI quality gates
 
