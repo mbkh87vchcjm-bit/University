@@ -4,7 +4,8 @@
 enum SqlTruthValue {
   trueValue,
   falseValue,
-  unknown,
+  unknown;
+
 }
 
 extension SqlTruthValueOperations on SqlTruthValue {
