@@ -21,9 +21,15 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
 
   Future<Database> get _db async {
     if (_database != null) return _database!;
-    _openingDatabase ??= _openDatabase();
-    _database = await _openingDatabase;
-    return _database!;
+    final opening = _openingDatabase ??= _openDatabase();
+    try {
+      final database = await opening;
+      _database ??= database;
+      return _database!;
+    } catch (_) {
+      _openingDatabase = null;
+      rethrow;
+    }
   }
 
   Future<Database> _openDatabase() async {
