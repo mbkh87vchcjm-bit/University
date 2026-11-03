@@ -5,7 +5,9 @@ SQL Student Studio separates application metadata models (stored in local SQLite
 
 ---
 
-## 1. T-SQL Data Type Specifications & Bounds
+## 1. Target T-SQL Data Type Specifications & Bounds
+
+> **Implementation status:** These tables describe the target semantic contract. Current `SqlValue` constructors are value containers; they do not yet enforce all SQL Server ranges, precision/scale, code-page, conversion, or temporal validation rules. Those checks belong to Phase 2 and must not be treated as implemented until tests prove them.
 
 To ensure educational alignment with Microsoft SQL Server standards, all engine data types enforce explicit bounds during validation:
 
@@ -126,7 +128,9 @@ class TableModel {
 
 ---
 
-## 5. Persistence Strategy for Student Database Engine
+## 5. Planned Persistence Strategy for Student Database Engine
+
+> **Not yet implemented:** The following is the planned student-database persistence design. The current SQLite database stores workspace project metadata only, not student SQL schemas or rows.
 To ensure student databases survive application restarts:
 - Student database instances, schemas, tables, constraints, and rows are serialized inside the application's local document storage directory (`student_db/`).
 - Calling `persistState()` flushes `DatabaseStorage` state to disk; calling `restoreState()` reloads it into memory upon app launch.
