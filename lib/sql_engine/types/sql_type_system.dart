@@ -633,17 +633,6 @@ class SqlTypeSystem {
     return parsed;
   }
 
-  static DateTime _wallClock(DateTime value) => DateTime(
-        value.year,
-        value.month,
-        value.day,
-        value.hour,
-        value.minute,
-        value.second,
-        value.millisecond,
-        value.microsecond,
-      );
-
   static DateTime _toSmallDateTime(DateTime value) {
     final roundedUp = value.second > 29 ||
         (value.second == 29 && value.millisecond >= 999);
