@@ -1,7 +1,4 @@
-import 'package:meta/meta.dart';
-
 /// Strongly-typed SQL Value abstraction hierarchy covering T-SQL data types.
-@immutable
 sealed class SqlValue {
   const SqlValue();
 
@@ -306,7 +303,7 @@ final class SqlDateTime extends SqlValue {
   int get hashCode => value.hashCode;
 
   @override
-  String toSqlLiteral() => "'" + _formatSqlDateTime(value, 3) + "'";
+  String toSqlLiteral() => "'${_formatSqlDateTime(value, 3)}'";
 
   @override
   String toString() => _formatSqlDateTime(value, 3);
@@ -420,7 +417,7 @@ final class SqlDateTime2 extends SqlValue {
   int get hashCode => Object.hash(value, scale);
 
   @override
-  String toSqlLiteral() => "'" + _formatSqlDateTime(value, scale) + "'";
+  String toSqlLiteral() => "'${_formatSqlDateTime(value, scale)}'";
 
   @override
   String toString() => _formatSqlDateTime(value, scale);
@@ -454,7 +451,7 @@ final class SqlDateTimeOffset extends SqlValue {
     final hours = (absolute ~/ 60).toString().padLeft(2, '0');
     final minutes = (absolute % 60).toString().padLeft(2, '0');
     final wallClock = _formatSqlDateTime(value, scale);
-    return "'" + wallClock + sign + hours + ":" + minutes + "'";
+    return "'$wallClock$sign$hours:$minutes'";
   }
 
   @override
@@ -532,20 +529,18 @@ String _formatSqlDateTime(DateTime value, int scale) {
           rounded % 1000,
         );
 
-  final date = normalized.year.toString().padLeft(4, '0') + '-' +
-      normalized.month.toString().padLeft(2, '0') + '-' +
-      normalized.day.toString().padLeft(2, '0');
-  final time = normalized.hour.toString().padLeft(2, '0') + ':' +
-      normalized.minute.toString().padLeft(2, '0') + ':' +
-      normalized.second.toString().padLeft(2, '0');
-  if (scale == 0) return date + 'T' + time;
+  final date =
+      '${normalized.year.toString().padLeft(4, '0')}-${normalized.month.toString().padLeft(2, '0')}-${normalized.day.toString().padLeft(2, '0')}';
+  final time =
+      '${normalized.hour.toString().padLeft(2, '0')}:${normalized.minute.toString().padLeft(2, '0')}:${normalized.second.toString().padLeft(2, '0')}';
+  if (scale == 0) return '${date}T${time}';
 
   final sixDigits = (normalized.millisecond * 1000 + normalized.microsecond)
       .toString()
       .padLeft(6, '0');
   final fraction = sixDigits.substring(0, effectiveScale) +
       (scale == 7 ? '0' : '');
-  return date + 'T' + time + '.' + fraction;
+  return '${date}T${time}.${fraction}';
 }
 
 int _sqlPowerOfTen(int exponent) {
