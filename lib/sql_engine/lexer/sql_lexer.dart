@@ -445,12 +445,15 @@ class SqlLexer {
       _advance();
     }
     final prefixLength = prefix == '@' && _source.startsWith('@@', start) ? 2 : 1;
+    final isVariable = prefix == '@';
     return _token(
-      SqlTokenKind.variable,
+      isVariable ? SqlTokenKind.variable : SqlTokenKind.identifier,
       start,
       line,
       column,
-      value: _source.substring(start + prefixLength, _index),
+      value: isVariable
+          ? _source.substring(start + prefixLength, _index)
+          : _source.substring(start, _index),
     );
   }
 
