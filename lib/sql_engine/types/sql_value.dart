@@ -416,7 +416,7 @@ final class SqlDateTime2 extends SqlValue {
   int get hashCode => Object.hash(value, scale);
 
   @override
-  String toSqlLiteral() => "'\${value.toIso8601String()}'";
+  String toSqlLiteral() => "'${value.toIso8601String()}'";
 
   @override
   String toString() => value.toIso8601String();
