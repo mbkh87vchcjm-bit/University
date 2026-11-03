@@ -73,7 +73,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('إنشاء أول مشروع'));
+    await tester.tap(find.byTooltip('إنشاء مشروع'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
