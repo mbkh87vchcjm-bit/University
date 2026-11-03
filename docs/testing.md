@@ -58,7 +58,8 @@ These tests use sqflite_common_ffi and a temporary SQLite database file on the C
 - Line and nested block comments, including comment omission mode.
 - Source offset/line/column accuracy across CRLF and multiline strings.
 - Stable diagnostics for unterminated strings/identifiers/comments, malformed exponents/binary literals, and invalid characters.
-- Lexer-aware GO separation, repeat-count metadata, malformed repeat-count rejection, and GO text inside non-code lexical constructs.
+- Lexer-aware GO separation, repeat-count metadata, malformed repeat-count rejection, trailing multi-line block-comment rejection, and GO text inside non-code lexical constructs.
+- CRLF preservation in decoded multiline literals, trailing-dot decimal tokens, and comment-aware separator handling.
 
 The lexer is a documented subset. It does not parse SQL statements or make them executable.
 

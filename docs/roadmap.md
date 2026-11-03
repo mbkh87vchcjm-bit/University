@@ -190,7 +190,7 @@ Current implementation checkpoint (development branch):
 - Added a pure-Dart scanner for the documented subset: keywords, Unicode identifiers, variables, bracketed and quoted identifiers, strings, numeric and binary literals, operators, punctuation, and comments.
 - Added zero-based UTF-16 source offsets, one-based line/column spans, batch numbers, and stable SSS lexical diagnostics.
 - Added nested block-comment support and CRLF/LF-aware position tracking.
-- Reworked GO splitting to use lexer tokens, recognize isolated GO lines, retain positive repeat-count metadata, and reject malformed repeat syntax.
+- Reworked GO splitting to use lexer tokens in linear time, recognize isolated GO lines, retain positive repeat-count metadata, and reject malformed repeat syntax or a trailing multi-line block comment.
 - GO text inside strings, comments, and quoted/bracketed identifiers is not treated as a batch separator.
 
 Phase 3 remains **in progress** until lexer/batch acceptance tests and Android CI pass on the current branch head.

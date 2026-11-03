@@ -19,7 +19,7 @@ The current application can manage local learning workspace projects. The SQL ty
 
 | Feature | Status | Current capability |
 |---|---|---|
-| GO batch separation | **Partial** | Lexer-aware isolated GO lines and positive repeat-count metadata are supported. The repeat count is recorded, not executed. |
+| GO batch separation | **Partial** | Lexer-aware isolated GO lines and positive repeat-count metadata are supported. The repeat count is recorded, not executed; malformed repeat syntax and a trailing multi-line block comment are rejected. |
 | T-SQL lexer (documented subset) | **Partial** | Source-aware tokens are implemented for the documented lexical subset; this is not the complete T-SQL lexical grammar. |
 | Parser and AST | Planned | SQL statements are not parsed into executable syntax trees yet. |
 | Semantic binding | Planned | Database, schema, table, column, type, and function name resolution is not implemented. |
