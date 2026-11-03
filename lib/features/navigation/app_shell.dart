@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models/workspace_project.dart';
+import '../../core/logging/app_logger.dart';
 import '../../core/storage/workspace_repository.dart';
 import '../common/feature_placeholder_screen.dart';
 import '../home/home_screen.dart';
@@ -44,7 +45,12 @@ class _AppShellState extends State<AppShell> {
         _isLoading = false;
         _loadError = null;
       });
-    } catch (error) {
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Could not load workspace projects.',
+        error: error,
+        stackTrace: stackTrace,
+      );
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -54,25 +60,52 @@ class _AppShellState extends State<AppShell> {
   }
 
   Future<void> _createProject(String name) async {
-    final project = await widget.repository.createProject(name);
-    await _reloadProjects();
-    if (!mounted) return;
-    setState(() => _activeProject = project);
+    try {
+      final project = await widget.repository.createProject(name);
+      await _reloadProjects();
+      if (!mounted) return;
+      setState(() => _activeProject = project);
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Could not create a workspace project.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 
   Future<void> _openProject(WorkspaceProject project) async {
-    final opened = await widget.repository.openProject(project.id);
-    await _reloadProjects();
-    if (!mounted) return;
-    setState(() => _activeProject = opened);
+    try {
+      final opened = await widget.repository.openProject(project.id);
+      await _reloadProjects();
+      if (!mounted) return;
+      setState(() => _activeProject = opened);
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Could not open a workspace project.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 
   Future<void> _deleteProject(WorkspaceProject project) async {
-    await widget.repository.deleteProject(project.id);
-    await _reloadProjects();
-    if (!mounted) return;
-    if (_activeProject?.id == project.id) {
-      setState(() => _activeProject = null);
+    try {
+      await widget.repository.deleteProject(project.id);
+      await _reloadProjects();
+      if (!mounted) return;
+      if (_activeProject?.id == project.id) {
+        setState(() => _activeProject = null);
+      }
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Could not delete a workspace project.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      rethrow;
     }
   }
 
