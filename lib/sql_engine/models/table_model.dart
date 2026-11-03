@@ -1,3 +1,4 @@
+import '../types/sql_type_spec.dart';
 import '../types/sql_value.dart';
 
 enum SqlDataType {
@@ -30,12 +31,16 @@ enum SqlDataType {
 class ColumnModel {
   final String name;
   final SqlDataType dataType;
+  /// Optional length/precision/scale-aware descriptor for the declared column.
+  /// The SQL parser/catalog will populate this when DDL execution is introduced.
+  final SqlTypeSpec? typeSpec;
   final bool isNullable;
   final bool isIdentity;
 
   const ColumnModel({
     required this.name,
     required this.dataType,
+    this.typeSpec,
     this.isNullable = true,
     this.isIdentity = false,
   });
