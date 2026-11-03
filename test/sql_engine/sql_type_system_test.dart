@@ -283,6 +283,20 @@ void main() {
         ),
         SqlValue.date(DateTime(1, 1, 1)),
       );
+      expect(
+        SqlTypeSystem.convert(
+          SqlValue.varchar('9999-12-31'),
+          SqlTypeSpec.date(),
+        ),
+        SqlValue.date(DateTime(9999, 12, 31)),
+      );
+      expect(
+        () => SqlTypeSystem.convert(
+          SqlValue.varchar('0000-12-31'),
+          SqlTypeSpec.date(),
+        ),
+        throwsA(isA<SqlTypeException>()),
+      );
     });
 
     test('strict ISO parsing rejects normalized invalid calendar dates', () {
