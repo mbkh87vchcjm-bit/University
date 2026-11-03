@@ -7,8 +7,15 @@ import '../home/home_screen.dart';
 
 class AppShell extends StatefulWidget {
   final WorkspaceRepository repository;
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
 
-  const AppShell({super.key, required this.repository});
+  const AppShell({
+    super.key,
+    required this.repository,
+    required this.themeMode,
+    required this.onThemeModeChanged,
+  });
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -128,7 +135,11 @@ class _AppShellState extends State<AppShell> {
         phase: 15,
         icon: Icons.school,
       ),
-      _MoreScreen(activeProject: _activeProject),
+      _MoreScreen(
+        activeProject: _activeProject,
+        themeMode: widget.themeMode,
+        onThemeModeChanged: widget.onThemeModeChanged,
+      ),
     ];
 
     return Directionality(
@@ -152,8 +163,14 @@ class _AppShellState extends State<AppShell> {
 
 class _MoreScreen extends StatelessWidget {
   final WorkspaceProject? activeProject;
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
 
-  const _MoreScreen({required this.activeProject});
+  const _MoreScreen({
+    required this.activeProject,
+    required this.themeMode,
+    required this.onThemeModeChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +198,39 @@ class _MoreScreen extends StatelessWidget {
             leading: const Icon(Icons.folder_outlined),
             title: const Text('المشروع النشط'),
             subtitle: Text(activeProject?.name ?? 'لم يتم فتح مشروع'),
+          ),
+        ),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                const Icon(Icons.palette_outlined),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('مظهر التطبيق')),
+                DropdownButton<ThemeMode>(
+                  value: themeMode,
+                  underline: const SizedBox.shrink(),
+                  items: const [
+                    DropdownMenuItem(
+                      value: ThemeMode.system,
+                      child: Text('حسب الجهاز'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.light,
+                      child: Text('فاتح'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.dark,
+                      child: Text('داكن'),
+                    ),
+                  ],
+                  onChanged: (mode) {
+                    if (mode != null) onThemeModeChanged(mode);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         Card(
