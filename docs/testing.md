@@ -1,81 +1,70 @@
-# Testing Strategy & Validation Benchmark
+# SQL Student Studio — Test Strategy
 
-## Overview
-SQL Student Studio categorizes tests into distinct tiers:
-1. **Foundation Tests (Implemented in PR #5)**: Validates `SqlValue` types, literal formatting, `BatchProcessor` GO pre-lexer splitting, and `TableModel` row ID allocation.
-2. **Core Engine Tests (Planned PR #6–#12)**: Validates Lexer tokenization, Parser AST generation, Semantic Validation, Expression Evaluation, and Constraint checking.
-3. **MVP Integration & Benchmark Tests (Planned PR #10–#13)**: End-to-end execution of T-SQL scripts.
+## 1. Test layers
 
----
+The project is validated at four separate levels:
 
-## Test Suites Layout (Dart)
+1. **Domain unit tests:** SQL values, model validation, batch processing, diagnostics, and other pure Dart behavior.
+2. **Application storage integration tests:** real SQLite schema creation, migrations, persistence across close/reopen, and invalid settings.
+3. **Widget tests:** navigation, planned-feature disclosures, project creation/open/delete, confirmation dialogs, and theme selection.
+4. **Android build validation:** debug and release APK compilation plus GitHub Actions artifact upload.
 
-```
-test/
-├── sql_engine/
-│   ├── batch_processor_test.dart   # GO batch delimiter, string, comment & empty batch tests (Implemented)
-│   ├── sql_value_test.dart         # SqlValue formatting & quote escaping tests (Implemented)
-│   ├── table_model_test.dart       # TableModel rowId allocation & FK validation tests (Implemented)
-│   ├── lexer_test.dart             # Tokenization, string escaping ('Ali''s'), bracket identifiers (Planned PR #7)
-│   ├── parser_test.dart            # AST parsing & Golden AST verification (Planned PR #8)
-│   ├── validator_test.dart         # Semantic, schema & case-insensitivity validation (Planned PR #9)
-│   ├── executor_test.dart          # Engine execution & result verification (Planned PR #10)
-│   └── constraint_test.dart        # Single/Composite PK, FK, Unique, Default, Nullability tests (Planned PR #12)
-│
-└── widget_test.dart                # HomeScreen and App UI widget tests (Implemented)
-```
+## 2. Currently implemented tests
 
----
+### Workspace models
 
-## Foundation Test Coverage (PR #5 Implemented)
-- **`BatchProcessor` Tests**: Validates mixed-case `GO` delimiters, empty/consecutive `GO`s, CRLF line endings, and string/comment exclusion (`SELECT 'GO';` or `-- GO`).
-- **`SqlValue` Tests**: Validates canonical string decimals, number ranges (`SqlInt`, `SqlBigInt`, `SqlSmallInt`, `SqlTinyInt`), quote escaping (`'Ali''s'`), and `SqlDate` formatting.
-- **`TableModel` Tests**: Validates `allocateRowId()` sequence incrementing and `ForeignKeyConstraint` column count mismatch exceptions.
+- A valid database record maps into a WorkspaceProject.
+- Malformed or incomplete stored records throw a controlled FormatException.
 
----
+### Workspace SQLite repository
 
-## Essential Benchmark Test Flow (Planned MVP PR #10)
+- A version-1 workspace database with an existing project is opened by the version-2 repository.
+- The migration creates app settings without deleting the pre-existing project.
+- The newly created project and selected theme are persisted.
+- Closing and reopening the repository preserves projects and settings.
+- Unsupported theme modes are rejected.
 
-```sql
-CREATE DATABASE University;
-GO
+These tests use sqflite_common_ffi and a temporary SQLite database file on the CI runner. They exercise SQLite persistence and migration rather than a fake in-memory repository.
 
-USE University;
-GO
+### Widget tests
 
-CREATE TABLE Students (
-    ID INT PRIMARY KEY,
-    Name NVARCHAR(100) NOT NULL,
-    Age INT
-);
-GO
+- The app displays the SQL Student Studio home and five navigation destinations.
+- Student can create a project through the create-project dialog.
+- Database and query screens visibly identify themselves as planned features with the appropriate phase number.
+- Student can open a project and delete it only after confirmation.
+- Theme selection updates the application preference through the repository interface.
 
-INSERT INTO Students
-VALUES
-(1, 'Ahmed', 20),
-(2, 'Ali', 21);
-GO
+### SQL foundation tests
 
-SELECT *
-FROM Students
-WHERE Age >= 20
-ORDER BY Name;
-GO
-```
+- BatchProcessor splits isolated GO separators with case-insensitive handling.
+- It ignores GO in quoted strings and comments.
+- It handles empty batches and CRLF line endings.
+- SqlValue literal formatting and basic equality are tested.
+- TableModel row ID allocation and foreign-key column-count validation are tested.
 
-### Required Test Assertions:
-1. `CREATE DATABASE` successfully registers database in `DatabaseStorage`.
-2. `USE` changes active engine context to `University`.
-3. `CREATE TABLE` registers `NOT NULL` and `PRIMARY KEY` constraints.
-4. `INSERT INTO` creates 2 records (`Affected rows: 2`).
-5. `SELECT` returns filtered rows sorted by `Name` (`Returned rows: 2`).
+**Important:** SQL foundation tests do not indicate that complete T-SQL parsing, type conversion, SQL Server collation, DDL, or DML execution is implemented. Those are covered by later phases.
 
----
+## 3. Required CI quality gates
 
-## Type Mismatch & Statement Atomicity Test Specification
+Every Phase 1 revision must pass:
 
-```sql
-INSERT INTO Students (ID, Name, Age)
-VALUES ('invalid', 'Ahmed', 20);
-```
-- **Atomicity Assertion**: A failed `INSERT` statement must abort immediately with a `typeError` category `SqlError` and leave zero partial row mutations in `DatabaseStorage`.
+- flutter pub get
+- dart format --output=none --set-exit-if-changed .
+- flutter analyze
+- flutter test
+- flutter build apk --debug
+- flutter build apk --release
+- APK upload artifact sql-student-studio-release-apk
+
+A green analyzer alone is not a successful phase. Both test workflows and the APK build workflow must pass on the current branch head.
+
+## 4. Phase 1 acceptance checks
+
+- New install initializes workspace metadata correctly.
+- An existing v1 workspace migrates to v2 without losing projects.
+- Create, list, open, delete, and last-opened restoration work.
+- Theme preference (system/light/dark) survives database reopen.
+- No UI action falsely implies that a SQL database or query engine has been implemented.
+- Student-visible storage errors are actionable and do not expose internal exception details.
+- Android package identity and app label use SQL Student Studio.
+- No unrelated coursework, medical logo, or previous product identity remains in the active app identity.
