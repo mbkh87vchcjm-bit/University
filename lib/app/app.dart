@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
-import 'router.dart';
+
+import '../core/storage/workspace_repository.dart';
+import '../features/navigation/app_shell.dart';
 import 'theme.dart';
 
 class SqlStudentStudioApp extends StatelessWidget {
-  const SqlStudentStudioApp({super.key});
+  final WorkspaceRepository repository;
+
+  const SqlStudentStudioApp({
+    super.key,
+    required this.repository,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -12,9 +19,8 @@ class SqlStudentStudioApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      onGenerateRoute: AppRouter.generateRoute,
-      initialRoute: '/',
+      themeMode: ThemeMode.system,
+      home: AppShell(repository: repository),
     );
   }
 }
