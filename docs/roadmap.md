@@ -193,7 +193,11 @@ Current implementation checkpoint (development branch):
 - Reworked GO splitting to use lexer tokens in linear time, recognize isolated GO lines, retain positive repeat-count metadata, and reject malformed repeat syntax or a trailing multi-line block comment.
 - GO text inside strings, comments, and quoted/bracketed identifiers is not treated as a batch separator.
 
-Phase 3 remains **in progress** until lexer/batch acceptance tests and Android CI pass on the current branch head.
+**Phase 3 acceptance: PASSED** on code commit `c7b02a2e63077ab9dc5f8773c0aed294b42de3d4`.
+
+- Flutter CI: static analysis passed and all 83 tests passed.
+- Android CI: debug APK build passed, release APK build passed, and the `sql-student-studio-release-apk` artifact was uploaded.
+- The accepted scope is the documented lexer subset and lexer-aware GO batch handling. It does not include a SQL statement parser, AST, semantic binder, or SQL execution.
 
 Work:
 - Tokenize keywords, identifiers, bracketed identifiers, quoted identifiers when enabled, literals, comments, punctuation, and multi-character operators.

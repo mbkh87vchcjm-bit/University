@@ -63,6 +63,20 @@ These tests use sqflite_common_ffi and a temporary SQLite database file on the C
 
 The lexer is a documented subset. It does not parse SQL statements or make them executable.
 
+### Phase 3 acceptance evidence
+
+Accepted on code commit `c7b02a2e63077ab9dc5f8773c0aed294b42de3d4`:
+
+- Flutter analysis passed.
+- All 83 unit/widget test cases passed.
+- Android debug APK build passed.
+- Android release APK build passed.
+- GitHub Actions uploaded `sql-student-studio-release-apk`.
+- Verification workflow: https://github.com/mbkh87vchcjm-bit/University/actions/runs/41691620736
+- Flutter CI workflow: https://github.com/mbkh87vchcjm-bit/University/actions/runs/41691620691
+
+The APK is a release build of the educational shell and isolated lexer/type foundations. It does not expose executable SQL statements because the parser, semantic binder, database catalog, and query executor are later phases.
+
 ## 3. Required CI quality gates
 
 Every phase revision must pass:
