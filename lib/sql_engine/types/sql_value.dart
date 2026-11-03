@@ -20,6 +20,18 @@ sealed class SqlValue {
   const factory SqlValue.date(DateTime value) = SqlDate;
   const factory SqlValue.time(String value) = SqlTime;
   const factory SqlValue.dateTime(DateTime value) = SqlDateTime;
+  factory SqlValue.real(double value) = SqlReal;
+  factory SqlValue.money(String value) = SqlMoney;
+  factory SqlValue.smallMoney(String value) = SqlSmallMoney;
+  factory SqlValue.binary(List<int> value) = SqlBinary;
+  factory SqlValue.varBinary(List<int> value) = SqlVarBinary;
+  factory SqlValue.dateTime2(DateTime value, {int scale = 7}) = SqlDateTime2;
+  factory SqlValue.dateTimeOffset(
+    DateTime value, {
+    int offsetMinutes = 0,
+    int scale = 7,
+  }) = SqlDateTimeOffset;
+  factory SqlValue.uniqueIdentifier(String value) = SqlUniqueIdentifier;
 
   /// Returns the standard T-SQL literal string representation.
   String toSqlLiteral();
@@ -292,6 +304,199 @@ final class SqlDateTime extends SqlValue {
 
   @override
   String toString() => value.toIso8601String();
+}
+
+final class SqlReal extends SqlValue {
+  final double value;
+  const SqlReal(this.value);
+
+  @override
+  bool operator ==(Object other) => other is SqlReal && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() => value.toString();
+
+  @override
+  String toString() => value.toString();
+}
+
+final class SqlMoney extends SqlValue {
+  final String value;
+  const SqlMoney(this.value);
+
+  @override
+  bool operator ==(Object other) => other is SqlMoney && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() => value;
+
+  @override
+  String toString() => value;
+}
+
+final class SqlSmallMoney extends SqlValue {
+  final String value;
+  const SqlSmallMoney(this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      other is SqlSmallMoney && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toSqlLiteral() => value;
+
+  @override
+  String toString() => value;
+}
+
+final class SqlBinary extends SqlValue {
+  final List<int> value;
+
+  SqlBinary(List<int> value) : value = List<int>.unmodifiable(value) {
+    _validateBytes(this.value);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is SqlBinary && _bytesEqual(other.value, value);
+
+  @override
+  int get hashCode => Object.hashAll(value);
+
+  @override
+  String toSqlLiteral() => _bytesToHex(value);
+
+  @override
+  String toString() => toSqlLiteral();
+}
+
+final class SqlVarBinary extends SqlValue {
+  final List<int> value;
+
+  SqlVarBinary(List<int> value) : value = List<int>.unmodifiable(value) {
+    _validateBytes(this.value);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is SqlVarBinary && _bytesEqual(other.value, value);
+
+  @override
+  int get hashCode => Object.hashAll(value);
+
+  @override
+  String toSqlLiteral() => _bytesToHex(value);
+
+  @override
+  String toString() => toSqlLiteral();
+}
+
+final class SqlDateTime2 extends SqlValue {
+  final DateTime value;
+  final int scale;
+
+  const SqlDateTime2(this.value, {this.scale = 7});
+
+  @override
+  bool operator ==(Object other) =>
+      other is SqlDateTime2 &&
+      other.value == value &&
+      other.scale == scale;
+
+  @override
+  int get hashCode => Object.hash(value, scale);
+
+  @override
+  String toSqlLiteral() => "'\${value.toIso8601String()}'";
+
+  @override
+  String toString() => value.toIso8601String();
+}
+
+final class SqlDateTimeOffset extends SqlValue {
+  final DateTime value;
+  final int offsetMinutes;
+  final int scale;
+
+  const SqlDateTimeOffset(
+    this.value, {
+    this.offsetMinutes = 0,
+    this.scale = 7,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      other is SqlDateTimeOffset &&
+      other.value == value &&
+      other.offsetMinutes == offsetMinutes &&
+      other.scale == scale;
+
+  @override
+  int get hashCode => Object.hash(value, offsetMinutes, scale);
+
+  @override
+  String toSqlLiteral() {
+    final sign = offsetMinutes < 0 ? '-' : '+';
+    final absolute = offsetMinutes.abs();
+    final hours = (absolute ~/ 60).toString().padLeft(2, '0');
+    final minutes = (absolute % 60).toString().padLeft(2, '0');
+    final wallClock = value.toIso8601String().replaceFirst('Z', '');
+    return "'$wallClock$sign$hours:$minutes'";
+  }
+
+  @override
+  String toString() => toSqlLiteral();
+}
+
+final class SqlUniqueIdentifier extends SqlValue {
+  final String value;
+
+  const SqlUniqueIdentifier(this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      other is SqlUniqueIdentifier &&
+      other.value.toLowerCase() == value.toLowerCase();
+
+  @override
+  int get hashCode => value.toLowerCase().hashCode;
+
+  @override
+  String toSqlLiteral() => "'$value'";
+
+  @override
+  String toString() => value;
+}
+
+void _validateBytes(List<int> bytes) {
+  if (bytes.any((byte) => byte < 0 || byte > 255)) {
+    throw ArgumentError('Binary values must contain bytes from 0 to 255.');
+  }
+}
+
+bool _bytesEqual(List<int> left, List<int> right) {
+  if (left.length != right.length) return false;
+  for (var i = 0; i < left.length; i++) {
+    if (left[i] != right[i]) return false;
+  }
+  return true;
+}
+
+String _bytesToHex(List<int> bytes) {
+  final buffer = StringBuffer('0x');
+  for (final byte in bytes) {
+    buffer.write(byte.toRadixString(16).padLeft(2, '0').toUpperCase());
+  }
+  return buffer.toString();
 }
 
 typedef SqlRow = Map<String, SqlValue>;
