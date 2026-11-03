@@ -7,6 +7,7 @@ import 'package:sql_student_studio/core/storage/workspace_repository.dart';
 class _MemoryWorkspaceRepository implements WorkspaceRepository {
   final List<WorkspaceProject> _projects = [];
   int _nextId = 1;
+  String themeMode = 'system';
 
   @override
   Future<List<WorkspaceProject>> getProjects() async =>
@@ -47,6 +48,17 @@ class _MemoryWorkspaceRepository implements WorkspaceRepository {
   @override
   Future<void> deleteProject(int id) async {
     _projects.removeWhere((project) => project.id == id);
+  }
+
+  @override
+  Future<String> getThemeMode() async => themeMode;
+
+  @override
+  Future<void> setThemeMode(String mode) async {
+    if (!const {'system', 'light', 'dark'}.contains(mode)) {
+      throw ArgumentError.value(mode);
+    }
+    themeMode = mode;
   }
 
   @override
@@ -128,4 +140,22 @@ void main() {
 
     expect(find.text('لا توجد مشاريع محفوظة'), findsOneWidget);
   });
+  testWidgets('student can change and persist the app theme preference',
+      (tester) async {
+    final repository = _MemoryWorkspaceRepository();
+    await tester.pumpWidget(SqlStudentStudioApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('المزيد'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButton<ThemeMode>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('داكن').last);
+    await tester.pumpAndSettle();
+
+    expect(repository.themeMode, 'dark');
+    expect(find.text('مظهر التطبيق'), findsOneWidget);
+  });
+
 }
