@@ -161,11 +161,22 @@ Work:
 - Implement collation configuration and Arabic/Unicode test vectors.
 - Clarify CHAR/VARCHAR byte/code-page limitations versus NCHAR/NVARCHAR Unicode behavior.
 
+Current implementation checkpoint:
+- Added type descriptors with parameter validation for DECIMAL/NUMERIC, FLOAT, character, binary, and temporal types.
+- Added conversion and boundary validation for the documented subset of integer, numeric, text, binary, temporal, GUID, and ROWVERSION assignment behavior.
+- Added standalone SQL TRUE/FALSE/UNKNOWN truth-table helpers.
+- Added a deliberately limited collation profile with case/accent and Arabic combining-mark test vectors.
+- Added tests for numeric boundaries, text lengths/code pages, binary values, temporal rounding, offset retention, NULL logic, and collation.
+- Extended column metadata to retain an optional precision/scale-aware type descriptor.
+
+Phase 2 is still **in progress** until current-branch CI and all acceptance tests pass. The type layer is not yet wired into a SQL parser, DDL, DML, or a persistent student database.
+
 Acceptance:
-- Boundary tests for every implemented type.
-- Conversion matrix tests and NULL truth-table tests.
-- Case/accent and Arabic comparison tests.
-- Unsupported types are rejected with explicit diagnostics, never silently coerced.
+- Boundary and conversion tests cover the currently implemented type subset.
+- NULL truth-table tests pass.
+- Case/accent and Arabic comparison tests pass for the documented simulator profile.
+- Unsupported types and conversions are rejected explicitly, never silently coerced.
+- Flutter analysis, all tests, and Android debug/release builds pass on the phase 2 branch.
 
 ### Phase 3 — Lexer and Batch Processing
 
