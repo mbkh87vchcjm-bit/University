@@ -300,10 +300,10 @@ final class SqlDateTime extends SqlValue {
   int get hashCode => value.hashCode;
 
   @override
-  String toSqlLiteral() => "'${value.toIso8601String()}'";
+  String toSqlLiteral() => "'" + _formatSqlDateTime(value, 3) + "'";
 
   @override
-  String toString() => value.toIso8601String();
+  String toString() => _formatSqlDateTime(value, 3);
 }
 
 final class SqlReal extends SqlValue {
@@ -408,18 +408,16 @@ final class SqlDateTime2 extends SqlValue {
 
   @override
   bool operator ==(Object other) =>
-      other is SqlDateTime2 &&
-      other.value == value &&
-      other.scale == scale;
+      other is SqlDateTime2 && other.value == value && other.scale == scale;
 
   @override
   int get hashCode => Object.hash(value, scale);
 
   @override
-  String toSqlLiteral() => "'${value.toIso8601String()}'";
+  String toSqlLiteral() => "'" + _formatSqlDateTime(value, scale) + "'";
 
   @override
-  String toString() => value.toIso8601String();
+  String toString() => _formatSqlDateTime(value, scale);
 }
 
 final class SqlDateTimeOffset extends SqlValue {
@@ -449,8 +447,8 @@ final class SqlDateTimeOffset extends SqlValue {
     final absolute = offsetMinutes.abs();
     final hours = (absolute ~/ 60).toString().padLeft(2, '0');
     final minutes = (absolute % 60).toString().padLeft(2, '0');
-    final wallClock = value.toIso8601String().replaceFirst('Z', '');
-    return "'$wallClock$sign$hours:$minutes'";
+    final wallClock = _formatSqlDateTime(value, scale);
+    return "'" + wallClock + sign + hours + ":" + minutes + "'";
   }
 
   @override
@@ -497,6 +495,59 @@ String _bytesToHex(List<int> bytes) {
     buffer.write(byte.toRadixString(16).padLeft(2, '0').toUpperCase());
   }
   return buffer.toString();
+}
+
+
+/// Formats SQL temporal values at their declared fractional precision.
+/// DATETIME is displayed to milliseconds; DateTime2/Offset scale 7 appends
+/// a zero seventh digit because Dart DateTime cannot retain 100-nanosecond data.
+String _formatSqlDateTime(DateTime value, int scale) {
+  final effectiveScale = scale > 6 ? 6 : scale;
+  final factor = _sqlPowerOfTen(6 - effectiveScale);
+  final microseconds = value.millisecond * 1000 + value.microsecond;
+  final rounded = ((microseconds + factor ~/ 2) ~/ factor) * factor;
+  final normalized = rounded >= 1000000
+      ? DateTime(
+          value.year,
+          value.month,
+          value.day,
+          value.hour,
+          value.minute,
+          value.second + 1,
+        )
+      : DateTime(
+          value.year,
+          value.month,
+          value.day,
+          value.hour,
+          value.minute,
+          value.second,
+          rounded ~/ 1000,
+          rounded % 1000,
+        );
+
+  final date = normalized.year.toString().padLeft(4, '0') + '-' +
+      normalized.month.toString().padLeft(2, '0') + '-' +
+      normalized.day.toString().padLeft(2, '0');
+  final time = normalized.hour.toString().padLeft(2, '0') + ':' +
+      normalized.minute.toString().padLeft(2, '0') + ':' +
+      normalized.second.toString().padLeft(2, '0');
+  if (scale == 0) return date + 'T' + time;
+
+  final sixDigits = (normalized.millisecond * 1000 + normalized.microsecond)
+      .toString()
+      .padLeft(6, '0');
+  final fraction = sixDigits.substring(0, effectiveScale) +
+      (scale == 7 ? '0' : '');
+  return date + 'T' + time + '.' + fraction;
+}
+
+int _sqlPowerOfTen(int exponent) {
+  var value = 1;
+  for (var i = 0; i < exponent; i++) {
+    value *= 10;
+  }
+  return value;
 }
 
 typedef SqlRow = Map<String, SqlValue>;
