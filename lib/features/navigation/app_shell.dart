@@ -171,8 +171,8 @@ class _MoreScreen extends StatelessWidget {
         Card(
           child: ListTile(
             leading: const Icon(Icons.verified_user_outlined),
-            title: const Text('ملف توافق SQL'),
-            subtitle: const Text('SQL Server 2014 — Compatibility Level 120'),
+            title: const Text('ملف التوافق الدراسي المستهدف'),
+            subtitle: const Text('SQL Server 2014 — Compatibility Level 120 (سيُفعّل تدريجيًا)'),
             trailing: const Icon(Icons.info_outline),
           ),
         ),
