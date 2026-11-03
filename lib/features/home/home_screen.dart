@@ -25,54 +25,10 @@ class HomeScreen extends StatelessWidget {
   });
 
   Future<void> _createProject(BuildContext context) async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
     final name = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('إنشاء مشروع جديد'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: controller,
-            autofocus: true,
-            maxLength: 60,
-            textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              labelText: 'اسم المشروع',
-              hintText: 'مثال: قاعدة بيانات الجامعة',
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              final text = value?.trim() ?? '';
-              if (text.isEmpty) return 'اكتب اسمًا للمشروع.';
-              if (text.length > 60) return 'الاسم يجب ألا يتجاوز 60 حرفًا.';
-              return null;
-            },
-            onFieldSubmitted: (_) {
-              if (formKey.currentState?.validate() ?? false) {
-                Navigator.of(dialogContext).pop(controller.text.trim());
-              }
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() ?? false) {
-                Navigator.of(dialogContext).pop(controller.text.trim());
-              }
-            },
-            child: const Text('إنشاء'),
-          ),
-        ],
-      ),
+      builder: (_) => const _CreateProjectDialog(),
     );
-    controller.dispose();
 
     if (name == null || !context.mounted) return;
     try {
@@ -419,6 +375,68 @@ class _ProjectTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CreateProjectDialog extends StatefulWidget {
+  const _CreateProjectDialog();
+
+  @override
+  State<_CreateProjectDialog> createState() => _CreateProjectDialogState();
+}
+
+class _CreateProjectDialogState extends State<_CreateProjectDialog> {
+  final _controller = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  void _submit() {
+    if (_formKey.currentState?.validate() ?? false) {
+      Navigator.of(context).pop(_controller.text.trim());
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('إنشاء مشروع جديد'),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _controller,
+          autofocus: true,
+          maxLength: 60,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(
+            labelText: 'اسم المشروع',
+            hintText: 'مثال: قاعدة بيانات الجامعة',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'اكتب اسمًا للمشروع.';
+            if (text.length > 60) return 'الاسم يجب ألا يتجاوز 60 حرفًا.';
+            return null;
+          },
+          onFieldSubmitted: (_) => _submit(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: const Text('إنشاء'),
+        ),
+      ],
     );
   }
 }
