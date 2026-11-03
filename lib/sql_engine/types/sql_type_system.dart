@@ -279,7 +279,7 @@ class SqlTypeSystem {
     if (value < minimum || value > maximum) {
       _fail(
         'SSS-TYPE-OVERFLOW',
-        'Value is outside the ' + target.displayName + ' range.',
+        'Value is outside the ${target.displayName} range.',
       );
     }
     return value.toInt();
@@ -380,7 +380,7 @@ class SqlTypeSystem {
     if (value is SqlNChar) return value.value;
     _fail(
       'SSS-TYPE-CONVERSION',
-      'Cannot convert ' + value.runtimeType.toString() + ' to a numeric SQL type.',
+      'Cannot convert ${value.runtimeType} to a numeric SQL type.',
     );
   }
 
@@ -466,7 +466,7 @@ class SqlTypeSystem {
       SqlTypeKind.varcharType => SqlValue.varchar(text),
       SqlTypeKind.ncharType => SqlValue.nchar(text),
       SqlTypeKind.nvarcharType => SqlValue.nvarchar(text),
-      _ => throw StateError('Unexpected text target ' + target.kind.name + '.'),
+      _ => throw StateError('Unexpected text target ${target.kind.name}.'),
     };
   }
 
@@ -563,7 +563,7 @@ class SqlTypeSystem {
 
     _fail(
       'SSS-TYPE-CONVERSION',
-      'Cannot convert ' + source.runtimeType.toString() + ' to BINARY/VARBINARY.',
+      'Cannot convert ${source.runtimeType} to BINARY/VARBINARY.',
     );
   }
 
@@ -776,10 +776,10 @@ class SqlTypeSystem {
     final hourText = (seconds ~/ 3600).toString().padLeft(2, '0');
     final minuteText = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
     final secondText = (seconds % 60).toString().padLeft(2, '0');
-    final base = hourText + ':' + minuteText + ':' + secondText;
+    final base = '$hourText:$minuteText:$secondText';
     if (scale == 0) return base;
     final decimal = fractionTicks.toString().padLeft(7, '0');
-    return base + '.' + decimal.substring(0, scale);
+    return '$base.${decimal.substring(0, scale)}';
   }
 
   static int _powerOfTen(int exponent) {
