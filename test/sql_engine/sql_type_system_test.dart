@@ -285,6 +285,50 @@ void main() {
       );
     });
 
+    test('strict ISO parsing rejects normalized invalid calendar dates', () {
+      for (final invalidDate in [
+        '2026-02-30',
+        '2026-13-01',
+        '2026-04-31',
+      ]) {
+        expect(
+          () => SqlTypeSystem.convert(
+            SqlValue.varchar(invalidDate),
+            SqlTypeSpec.date(),
+          ),
+          throwsA(isA<SqlTypeException>()),
+          reason: invalidDate,
+        );
+      }
+    });
+
+    test('strict ISO parsing rejects invalid clock components', () {
+      for (final invalidDateTime in [
+        '2026-11-03T24:00:00',
+        '2026-11-03T10:60:00',
+        '2026-11-03T10:15:60',
+      ]) {
+        expect(
+          () => SqlTypeSystem.convert(
+            SqlValue.varchar(invalidDateTime),
+            SqlTypeSpec.dateTime2(),
+          ),
+          throwsA(isA<SqlTypeException>()),
+          reason: invalidDateTime,
+        );
+      }
+    });
+
+    test('DATETIMEOFFSET rejects invalid dates even when offset is valid', () {
+      expect(
+        () => SqlTypeSystem.convert(
+          SqlValue.varchar('2026-02-30T10:15:30+05:30'),
+          SqlTypeSpec.dateTimeOffset(),
+        ),
+        throwsA(isA<SqlTypeException>()),
+      );
+    });
+
     test('SMALLDATETIME rounds to the nearest minute', () {
       expect(
         SqlTypeSystem.convert(
