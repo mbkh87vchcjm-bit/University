@@ -397,7 +397,14 @@ void main() {
   });
 
   group('Implicit conversion policy', () {
-    test('numeric widening is conservative and directional', () {
+    test('numeric precedence follows the SQL Server subset direction', () {
+      expect(
+        SqlTypeSystem.canImplicitlyConvert(
+          SqlTypeKind.bitType,
+          SqlTypeKind.tinyIntType,
+        ),
+        isTrue,
+      );
       expect(
         SqlTypeSystem.canImplicitlyConvert(
           SqlTypeKind.tinyIntType,
@@ -407,8 +414,43 @@ void main() {
       );
       expect(
         SqlTypeSystem.canImplicitlyConvert(
+          SqlTypeKind.smallMoneyType,
+          SqlTypeKind.moneyType,
+        ),
+        isTrue,
+      );
+      expect(
+        SqlTypeSystem.canImplicitlyConvert(
+          SqlTypeKind.moneyType,
+          SqlTypeKind.decimalType,
+        ),
+        isTrue,
+      );
+      expect(
+        SqlTypeSystem.canImplicitlyConvert(
+          SqlTypeKind.decimalType,
+          SqlTypeKind.realType,
+        ),
+        isTrue,
+      );
+      expect(
+        SqlTypeSystem.canImplicitlyConvert(
+          SqlTypeKind.realType,
           SqlTypeKind.floatType,
-          SqlTypeKind.intType,
+        ),
+        isTrue,
+      );
+      expect(
+        SqlTypeSystem.canImplicitlyConvert(
+          SqlTypeKind.floatType,
+          SqlTypeKind.decimalType,
+        ),
+        isFalse,
+      );
+      expect(
+        SqlTypeSystem.canImplicitlyConvert(
+          SqlTypeKind.moneyType,
+          SqlTypeKind.smallMoneyType,
         ),
         isFalse,
       );
