@@ -137,6 +137,12 @@ class SqlTypeSystem {
         return _convertBinary(source, target, truncate: truncateStrings);
       case SqlTypeKind.dateType:
         final date = _toDateTime(source, target.displayName);
+        _checkDateRange(
+          date,
+          DateTime(1, 1, 1),
+          DateTime(9999, 12, 31),
+          'DATE',
+        );
         return SqlValue.date(DateTime(date.year, date.month, date.day));
       case SqlTypeKind.timeType:
         return SqlValue.time(
