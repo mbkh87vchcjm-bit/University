@@ -533,14 +533,14 @@ String _formatSqlDateTime(DateTime value, int scale) {
       '${normalized.year.toString().padLeft(4, '0')}-${normalized.month.toString().padLeft(2, '0')}-${normalized.day.toString().padLeft(2, '0')}';
   final time =
       '${normalized.hour.toString().padLeft(2, '0')}:${normalized.minute.toString().padLeft(2, '0')}:${normalized.second.toString().padLeft(2, '0')}';
-  if (scale == 0) return '${date}T${time}';
+  if (scale == 0) return '${date}T$time';
 
   final sixDigits = (normalized.millisecond * 1000 + normalized.microsecond)
       .toString()
       .padLeft(6, '0');
   final fraction = sixDigits.substring(0, effectiveScale) +
       (scale == 7 ? '0' : '');
-  return '${date}T${time}.${fraction}';
+  return '${date}T$time.$fraction';
 }
 
 int _sqlPowerOfTen(int exponent) {
