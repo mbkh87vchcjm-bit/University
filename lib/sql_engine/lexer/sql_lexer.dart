@@ -442,14 +442,17 @@ class SqlLexer {
     final column = _column;
     final prefix = _peek();
     _advance();
-    if (prefix == '@' && _peek() == '@') _advance();
+    var prefixLength = 1;
+    if (_peek() == prefix && (prefix == '@' || prefix == '#')) {
+      _advance();
+      prefixLength = 2;
+    }
     if (!_isIdentifierStart(_peek()) && !_isDigit(_peek())) {
       return _token(SqlTokenKind.operator, start, line, column);
     }
     while (_isIdentifierPart(_peek())) {
       _advance();
     }
-    final prefixLength = prefix == '@' && _source.startsWith('@@', start) ? 2 : 1;
     final isVariable = prefix == '@';
     return _token(
       isVariable ? SqlTokenKind.variable : SqlTokenKind.identifier,

@@ -44,13 +44,13 @@ void main() {
     });
 
     test('recognizes Arabic identifiers and SQL variables', () {
-      final tokens = SqlLexer().tokenize('SELECT محمد FROM الطلاب WHERE Id = @studentId AND @@ROWCOUNT > 0; SELECT * FROM #tmpStudents');
+      final tokens = SqlLexer().tokenize('SELECT محمد FROM الطلاب WHERE Id = @studentId AND @@ROWCOUNT > 0; SELECT * FROM #tmpStudents; SELECT * FROM ##globalTemp');
       final identifiers = tokens.where((t) => t.kind == SqlTokenKind.identifier);
       final variables = tokens.where((t) => t.kind == SqlTokenKind.variable);
 
       expect(
         identifiers.map((t) => t.value),
-        containsAll(['محمد', 'الطلاب', '#tmpStudents']),
+        containsAll(['محمد', 'الطلاب', '#tmpStudents', '##globalTemp']),
       );
       expect(variables.map((t) => t.lexeme), containsAll(['@studentId', '@@ROWCOUNT']));
     });
