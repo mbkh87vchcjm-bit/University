@@ -40,7 +40,7 @@ class HomeScreen extends StatelessWidget {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذّر إنشاء المشروع: $error')),
+        SnackBar(content: Text('تعذّر إنشاء المشروع. حاول مرة أخرى.')),
       );
     }
   }
@@ -79,7 +79,7 @@ class HomeScreen extends StatelessWidget {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذّر حذف المشروع: $error')),
+        SnackBar(content: Text('تعذّر حذف المشروع. حاول مرة أخرى.')),
       );
     }
   }
@@ -190,7 +190,7 @@ class HomeScreen extends StatelessWidget {
                         } catch (error) {
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('تعذّر فتح المشروع: $error')),
+                            SnackBar(content: Text('تعذّر فتح المشروع. حاول مرة أخرى.')),
                           );
                         }
                       },
