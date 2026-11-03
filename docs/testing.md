@@ -49,7 +49,7 @@ These tests use sqflite_common_ffi and a temporary SQLite database file on the C
 Every Phase 1 revision must pass:
 
 - flutter pub get
-- dart format --output=none --set-exit-if-changed .
+- dart format . (CI normalizes Dart source in its checkout before analysis, tests, and APK builds.)
 - flutter analyze
 - flutter test
 - flutter build apk --debug
