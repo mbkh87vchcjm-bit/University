@@ -88,6 +88,20 @@ SELECT 2;
       expect(batches, ['SELECT 1;', 'SELECT 2;']);
     });
 
+    test('rejects a GO separator followed by a multi-line block comment', () {
+      const script = 'SELECT 1;\nGO /* comment starts\ncomment ends */\nSELECT 2;';
+      expect(
+        () => processor.processBatches(script),
+        throwsA(
+          isA<SqlBatchException>().having(
+            (error) => error.code,
+            'code',
+            'SSS-BATCH-GO',
+          ),
+        ),
+      );
+    });
+
     test('supports a positive GO repeat count as metadata', () {
       const script = '''
 PRINT 'repeat';

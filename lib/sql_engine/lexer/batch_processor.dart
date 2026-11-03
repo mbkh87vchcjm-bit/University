@@ -83,6 +83,20 @@ class BatchProcessor {
         continue;
       }
 
+      final separator = lineTokens.first;
+      final trailingMultilineComment = allTokens.any((token) {
+        return token.kind == SqlTokenKind.blockComment &&
+            token.startLine == line.number &&
+            token.startOffset > separator.startOffset &&
+            token.endLine > line.number;
+      });
+      if (trailingMultilineComment) {
+        _invalidGo(
+          separator,
+          'A GO separator cannot be followed by a multi-line block comment. Put the comment on a separate line.',
+        );
+      }
+
       var repeatCount = 1;
       if (lineTokens.length == 2 &&
           lineTokens[1].kind == SqlTokenKind.integerLiteral) {
