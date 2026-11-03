@@ -579,14 +579,52 @@ class SqlTypeSystem {
     final zoneMatch = _offsetSuffix.firstMatch(text);
     final dateText =
         zoneMatch == null ? text : text.substring(0, zoneMatch.start);
-    final parsed = DateTime.tryParse(dateText);
-    if (parsed == null) {
+    return _parseIsoDateTime(dateText, typeName);
+  }
+
+  /// Parses only the documented ISO-oriented subset and rejects calendar/time
+  /// overflow instead of accepting DateTime.parse normalization.
+  static DateTime _parseIsoDateTime(String input, String typeName) {
+    final match = _isoDateTimePattern.firstMatch(input);
+    if (match == null) {
       _fail(
         'SSS-TYPE-DATE',
-        'Value cannot be converted to $typeName. Use an ISO-8601 date/time value.',
+        'Value cannot be converted to $typeName. Use YYYY-MM-DD or an ISO date/time value.',
       );
     }
-    return _wallClock(parsed);
+
+    final year = int.parse(match.group(1)!);
+    final month = int.parse(match.group(2)!);
+    final day = int.parse(match.group(3)!);
+    final hour = int.parse(match.group(4) ?? '0');
+    final minute = int.parse(match.group(5) ?? '0');
+    final second = int.parse(match.group(6) ?? '0');
+    final fraction = (match.group(7) ?? '').padRight(6, '0');
+    final millisecond = int.parse(fraction.substring(0, 3));
+    final microsecond = int.parse(fraction.substring(3, 6));
+
+    final parsed = DateTime(
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second,
+      millisecond,
+      microsecond,
+    );
+    if (parsed.year != year ||
+        parsed.month != month ||
+        parsed.day != day ||
+        parsed.hour != hour ||
+        parsed.minute != minute ||
+        parsed.second != second) {
+      _fail(
+        'SSS-TYPE-DATE',
+        'Value contains an invalid calendar date or clock time for $typeName.',
+      );
+    }
+    return parsed;
   }
 
   static DateTime _wallClock(DateTime value) => DateTime(
@@ -698,20 +736,120 @@ class SqlTypeSystem {
       }
     }
 
-    final parsed = DateTime.tryParse(dateText);
-    if (parsed == null) {
-      _fail(
-        'SSS-TYPE-DATETIMEOFFSET',
-        'Value must be ISO-8601 with an optional Z or ±HH:mm offset.',
-      );
-    }
+    final parsed = _parseIsoDateTime(dateText, 'DATETIMEOFFSET');
     return SqlDateTimeOffset(
-      _wallClock(parsed),
+      parsed,
       offsetMinutes: offsetMinutes,
       scale: scale,
     );
   }
 
+  static final RegExp _isoDateTimePattern = RegExp(
+    r'^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,7}))?)?)?
+      RegExp(r'(Z|[+-]\d{2}:\d{2})$', caseSensitive: false);
+
+  static void _checkDateRange(
+    DateTime value,
+    DateTime minimum,
+    DateTime maximum,
+    String typeName,
+  ) {
+    if (value.isBefore(minimum) || value.isAfter(maximum)) {
+      _fail(
+        'SSS-TYPE-DATE-RANGE',
+        'Value is outside the supported $typeName date range.',
+      );
+    }
+  }
+
+  static String _timeText(SqlValue source) {
+    if (source is SqlTime) return source.value;
+    if (source is SqlDateTime) return _formatTime(source.value);
+    if (source is SqlDateTime2) return _formatTime(source.value);
+    if (source is SqlDateTimeOffset) return _formatTime(source.value);
+    return _textValue(source).trim();
+  }
+
+  static String _formatTime(DateTime value) {
+    final fraction =
+        ((value.millisecond * 1000 + value.microsecond) * 10)
+            .toString()
+            .padLeft(7, '0');
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    final second = value.second.toString().padLeft(2, '0');
+    return '$hour:$minute:$second.$fraction';
+  }
+
+  static String _normalizeTime(String input, int scale) {
+    final match = _timePattern.firstMatch(input.trim());
+    if (match == null) {
+      _fail(
+        'SSS-TYPE-TIME',
+        'TIME must use HH:mm:ss with up to seven fractional digits.',
+      );
+    }
+    final hour = int.parse(match.group(1)!);
+    final minute = int.parse(match.group(2)!);
+    final second = int.parse(match.group(3)!);
+    final fraction = match.group(4) ?? '';
+    final ticks =
+        (hour * 3600 + minute * 60 + second) * 10000000 +
+        int.parse(fraction.padRight(7, '0'));
+    final factor = _powerOfTen(7 - scale);
+    final rounded = ((ticks + factor ~/ 2) ~/ factor) * factor;
+
+    if (rounded >= 86400 * 10000000) {
+      _fail(
+        'SSS-TYPE-TIME-RANGE',
+        'Rounded TIME value exceeds 23:59:59.',
+      );
+    }
+
+    final seconds = rounded ~/ 10000000;
+    final fractionTicks = rounded % 10000000;
+    final hourText = (seconds ~/ 3600).toString().padLeft(2, '0');
+    final minuteText = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    final secondText = (seconds % 60).toString().padLeft(2, '0');
+    final base = '$hourText:$minuteText:$secondText';
+    if (scale == 0) return base;
+    final decimal = fractionTicks.toString().padLeft(7, '0');
+    return '$base.${decimal.substring(0, scale)}';
+  }
+
+  static int _powerOfTen(int exponent) {
+    var value = 1;
+    for (var i = 0; i < exponent; i++) {
+      value *= 10;
+    }
+    return value;
+  }
+
+  static final RegExp _timePattern =
+      RegExp(r'^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.(\d{1,7}))?$');
+
+  static final RegExp _guidPattern = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
+  static Never _fail(String code, String message) {
+    throw SqlTypeException(code, message);
+  }
+}
+
+class _DecimalParts {
+  final bool negative;
+  final String integer;
+  final String fraction;
+
+  const _DecimalParts({
+    required this.negative,
+    required this.integer,
+    required this.fraction,
+  });
+}
+,
+  );
   static final RegExp _offsetSuffix =
       RegExp(r'(Z|[+-]\d{2}:\d{2})$', caseSensitive: false);
 
