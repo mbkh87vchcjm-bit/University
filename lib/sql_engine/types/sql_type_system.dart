@@ -451,11 +451,7 @@ class SqlTypeSystem {
         if (!truncate) {
           _fail(
             'SSS-TYPE-TRUNCATION',
-            'Value length ' +
-                text.length.toString() +
-                ' exceeds ' +
-                target.displayName +
-                '.',
+            'Value length ${text.length} exceeds ${target.displayName}.'
           );
         }
         text = _truncateUtf16(text, maxLength);
@@ -517,7 +513,7 @@ class SqlTypeSystem {
         if (!truncate) {
           _fail(
             'SSS-TYPE-TRUNCATION',
-            'Binary value exceeds ' + target.displayName + '.',
+            'Binary value exceeds ${target.displayName}.'
           );
         }
         bytes = bytes.sublist(0, maxLength);
@@ -747,7 +743,7 @@ class SqlTypeSystem {
     final hour = value.hour.toString().padLeft(2, '0');
     final minute = value.minute.toString().padLeft(2, '0');
     final second = value.second.toString().padLeft(2, '0');
-    return hour + ':' + minute + ':' + second + '.' + fraction;
+    return '$hour:$minute:$second.$fraction';
   }
 
   static String _normalizeTime(String input, int scale) {
@@ -762,7 +758,8 @@ class SqlTypeSystem {
     final minute = int.parse(match.group(2)!);
     final second = int.parse(match.group(3)!);
     final fraction = match.group(4) ?? '';
-    final ticks = (hour * 3600 + minute * 60 + second) * 10000000 +
+    final ticks =
+        (hour * 3600 + minute * 60 + second) * 10000000 +
         int.parse(fraction.padRight(7, '0'));
     final factor = _powerOfTen(7 - scale);
     final rounded = ((ticks + factor ~/ 2) ~/ factor) * factor;
