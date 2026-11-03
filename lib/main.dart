@@ -5,9 +5,5 @@ import 'core/storage/workspace_repository.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(
-    SqlStudentStudioApp(
-      repository: SqliteWorkspaceRepository(),
-    ),
-  );
+  runApp(SqlStudentStudioApp(repository: SqliteWorkspaceRepository()));
 }

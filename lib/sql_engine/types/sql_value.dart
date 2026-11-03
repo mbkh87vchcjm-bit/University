@@ -80,7 +80,8 @@ final class SqlSmallInt extends SqlValue {
   const SqlSmallInt(this.value);
 
   @override
-  bool operator ==(Object other) => other is SqlSmallInt && other.value == value;
+  bool operator ==(Object other) =>
+      other is SqlSmallInt && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
@@ -168,7 +169,8 @@ final class SqlNVarchar extends SqlValue {
   const SqlNVarchar(this.value);
 
   @override
-  bool operator ==(Object other) => other is SqlNVarchar && other.value == value;
+  bool operator ==(Object other) =>
+      other is SqlNVarchar && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
@@ -252,7 +254,8 @@ final class SqlDate extends SqlValue {
 
   @override
   String toSqlLiteral() {
-    final formatted = "${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}";
+    final formatted =
+        "${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}";
     return "'$formatted'";
   }
 
@@ -282,7 +285,8 @@ final class SqlDateTime extends SqlValue {
   const SqlDateTime(this.value);
 
   @override
-  bool operator ==(Object other) => other is SqlDateTime && other.value == value;
+  bool operator ==(Object other) =>
+      other is SqlDateTime && other.value == value;
 
   @override
   int get hashCode => value.hashCode;

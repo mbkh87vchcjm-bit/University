@@ -21,11 +21,9 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
   final DatabaseFactory _factory;
   final String? _databasePath;
 
-  SqliteWorkspaceRepository({
-    DatabaseFactory? factory,
-    String? databasePath,
-  })  : _factory = factory ?? databaseFactory,
-        _databasePath = databasePath;
+  SqliteWorkspaceRepository({DatabaseFactory? factory, String? databasePath})
+    : _factory = factory ?? databaseFactory,
+      _databasePath = databasePath;
 
   Database? _database;
   Future<Database>? _openingDatabase;
@@ -44,13 +42,15 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
   }
 
   Future<Database> _openDatabase() async {
-    final path = _databasePath ?? p.join(await _factory.getDatabasesPath(), _databaseName);
+    final path =
+        _databasePath ??
+        p.join(await _factory.getDatabasesPath(), _databaseName);
     return _factory.openDatabase(
       path,
       options: OpenDatabaseOptions(
         version: _databaseVersion,
         onCreate: (db, version) async {
-        await db.execute('''
+          await db.execute('''
           CREATE TABLE workspace_projects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -58,21 +58,21 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
             last_opened_at TEXT NOT NULL
           )
         ''');
-        await db.execute(
-          'CREATE INDEX idx_workspace_projects_last_opened '
-          'ON workspace_projects(last_opened_at DESC)',
-        );
-        await db.execute('''
+          await db.execute(
+            'CREATE INDEX idx_workspace_projects_last_opened '
+            'ON workspace_projects(last_opened_at DESC)',
+          );
+          await db.execute('''
           CREATE TABLE app_settings (
             setting_key TEXT PRIMARY KEY,
             setting_value TEXT NOT NULL
           )
         ''');
-        await db.insert('app_settings', {
-          'setting_key': 'theme_mode',
-          'setting_value': 'system',
-        });
-      },
+          await db.insert('app_settings', {
+            'setting_key': 'theme_mode',
+            'setting_value': 'system',
+          });
+        },
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 2) {
             await db.execute('''
@@ -108,7 +108,11 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
       throw ArgumentError.value(name, 'name', 'Project name cannot be empty.');
     }
     if (normalizedName.length > 60) {
-      throw ArgumentError.value(name, 'name', 'Project name cannot exceed 60 characters.');
+      throw ArgumentError.value(
+        name,
+        'name',
+        'Project name cannot exceed 60 characters.',
+      );
     }
 
     final db = await _db;
@@ -166,7 +170,8 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
     );
     if (rows.isEmpty) return 'system';
     final value = rows.single['setting_value'];
-    if (value is! String || !const {'system', 'light', 'dark'}.contains(value)) {
+    if (value is! String ||
+        !const {'system', 'light', 'dark'}.contains(value)) {
       return 'system';
     }
     return value;
@@ -178,11 +183,10 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
       throw ArgumentError.value(mode, 'mode', 'Unsupported theme mode.');
     }
     final db = await _db;
-    await db.insert(
-      'app_settings',
-      {'setting_key': 'theme_mode', 'setting_value': mode},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('app_settings', {
+      'setting_key': 'theme_mode',
+      'setting_value': mode,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override

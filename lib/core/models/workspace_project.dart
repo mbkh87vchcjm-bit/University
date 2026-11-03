@@ -17,8 +17,10 @@ class WorkspaceProject {
     final createdAt = map['created_at'];
     final lastOpenedAt = map['last_opened_at'];
 
-    if (id is! int || name is! String ||
-        createdAt is! String || lastOpenedAt is! String) {
+    if (id is! int ||
+        name is! String ||
+        createdAt is! String ||
+        lastOpenedAt is! String) {
       throw const FormatException('Invalid workspace project record.');
     }
 

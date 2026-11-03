@@ -38,7 +38,8 @@ sealed class ConstraintModel {
 
 class PrimaryKeyConstraint extends ConstraintModel {
   final List<String> columns;
-  const PrimaryKeyConstraint({String? name, required this.columns}) : super(name);
+  const PrimaryKeyConstraint({String? name, required this.columns})
+    : super(name);
 }
 
 class ForeignKeyConstraint extends ConstraintModel {
@@ -53,7 +54,9 @@ class ForeignKeyConstraint extends ConstraintModel {
     required this.referencedColumns,
   }) : super(name) {
     if (columns.length != referencedColumns.length) {
-      throw ArgumentError('Foreign key source and referenced column counts must match.');
+      throw ArgumentError(
+        'Foreign key source and referenced column counts must match.',
+      );
     }
   }
 }
@@ -77,20 +80,15 @@ class DefaultConstraint extends ConstraintModel {
 class CheckConstraint extends ConstraintModel {
   final String expressionSql; // Check AST expression string
 
-  const CheckConstraint({
-    String? name,
-    required this.expressionSql,
-  }) : super(name);
+  const CheckConstraint({String? name, required this.expressionSql})
+    : super(name);
 }
 
 class StoredRow {
   final int rowId;
   final SqlRow values;
 
-  const StoredRow({
-    required this.rowId,
-    required this.values,
-  });
+  const StoredRow({required this.rowId, required this.values});
 }
 
 class TableModel {
@@ -108,9 +106,9 @@ class TableModel {
     List<ConstraintModel>? constraints,
     List<StoredRow>? rows,
     int nextRowId = 1,
-  })  : constraints = constraints ?? [],
-        rows = rows ?? [],
-        _nextRowId = nextRowId;
+  }) : constraints = constraints ?? [],
+       rows = rows ?? [],
+       _nextRowId = nextRowId;
 
   int allocateRowId() => _nextRowId++;
 }
@@ -120,7 +118,7 @@ class SchemaModel {
   final Map<String, TableModel> tables;
 
   SchemaModel({required this.name, Map<String, TableModel>? tables})
-      : tables = tables ?? {};
+    : tables = tables ?? {};
 }
 
 class DatabaseModel {
@@ -128,5 +126,5 @@ class DatabaseModel {
   final Map<String, SchemaModel> schemas;
 
   DatabaseModel({required this.name, Map<String, SchemaModel>? schemas})
-      : schemas = schemas ?? {'dbo': SchemaModel(name: 'dbo')};
+    : schemas = schemas ?? {'dbo': SchemaModel(name: 'dbo')};
 }

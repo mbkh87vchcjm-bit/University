@@ -11,17 +11,20 @@ void main() {
       expect(null1.toSqlLiteral(), equals('NULL'));
     });
 
-    test('SqlInt, SqlBigInt, SqlSmallInt, SqlTinyInt equality and literal formatting', () {
-      final intVal = SqlValue.integer(-2147483648);
-      final bigIntVal = SqlValue.bigInt(9223372036854775807);
-      final smallIntVal = SqlValue.smallInt(-32768);
-      final tinyIntVal = SqlValue.tinyInt(255);
+    test(
+      'SqlInt, SqlBigInt, SqlSmallInt, SqlTinyInt equality and literal formatting',
+      () {
+        final intVal = SqlValue.integer(-2147483648);
+        final bigIntVal = SqlValue.bigInt(9223372036854775807);
+        final smallIntVal = SqlValue.smallInt(-32768);
+        final tinyIntVal = SqlValue.tinyInt(255);
 
-      expect(intVal.toSqlLiteral(), equals('-2147483648'));
-      expect(bigIntVal.toSqlLiteral(), equals('9223372036854775807'));
-      expect(smallIntVal.toSqlLiteral(), equals('-32768'));
-      expect(tinyIntVal.toSqlLiteral(), equals('255'));
-    });
+        expect(intVal.toSqlLiteral(), equals('-2147483648'));
+        expect(bigIntVal.toSqlLiteral(), equals('9223372036854775807'));
+        expect(smallIntVal.toSqlLiteral(), equals('-32768'));
+        expect(tinyIntVal.toSqlLiteral(), equals('255'));
+      },
+    );
 
     test('SqlDecimal canonical string equality and literal representation', () {
       final dec1 = SqlValue.decimal('123.456');

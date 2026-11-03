@@ -8,10 +8,7 @@ import 'theme.dart';
 class SqlStudentStudioApp extends StatefulWidget {
   final WorkspaceRepository repository;
 
-  const SqlStudentStudioApp({
-    super.key,
-    required this.repository,
-  });
+  const SqlStudentStudioApp({super.key, required this.repository});
 
   @override
   State<SqlStudentStudioApp> createState() => _SqlStudentStudioAppState();
@@ -62,9 +59,9 @@ class _SqlStudentStudioAppState extends State<SqlStudentStudioApp> {
         stackTrace: stackTrace,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذّر حفظ إعداد المظهر.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تعذّر حفظ إعداد المظهر.')));
     }
   }
 

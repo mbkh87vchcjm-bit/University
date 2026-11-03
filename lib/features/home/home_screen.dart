@@ -73,9 +73,9 @@ class HomeScreen extends StatelessWidget {
     try {
       await onDeleteProject(project);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم حذف المشروع.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم حذف المشروع.')));
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -114,7 +114,10 @@ class HomeScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              Text('مختبر قواعد البيانات', style: theme.textTheme.headlineSmall),
+              Text(
+                'مختبر قواعد البيانات',
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: 8),
               Text(
                 'مساحة تدريب محلية لتعلّم SQL Server وكتابة أوامر T-SQL خطوة بخطوة.',
@@ -131,10 +134,7 @@ class HomeScreen extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      'مشاريعي',
-                      style: theme.textTheme.titleLarge,
-                    ),
+                    child: Text('مشاريعي', style: theme.textTheme.titleLarge),
                   ),
                   Text(
                     '${projects.length} مشروع',
@@ -185,12 +185,18 @@ class HomeScreen extends StatelessWidget {
                           await onOpenProject(project);
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('تم فتح «${project.name}».')),
+                            SnackBar(
+                              content: Text('تم فتح «${project.name}».'),
+                            ),
                           );
                         } catch (error) {
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('تعذّر فتح المشروع. حاول مرة أخرى.')),
+                            SnackBar(
+                              content: Text(
+                                'تعذّر فتح المشروع. حاول مرة أخرى.',
+                              ),
+                            ),
                           );
                         }
                       },
@@ -254,7 +260,10 @@ class _ActiveProjectCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.folder_special_outlined, color: colors.onPrimaryContainer),
+                Icon(
+                  Icons.folder_special_outlined,
+                  color: colors.onPrimaryContainer,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'مساحة العمل الحالية',
@@ -299,16 +308,23 @@ class _EmptyProjectsCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
         child: Column(
           children: [
-            Icon(Icons.create_new_folder_outlined, size: 42, color: colors.primary),
+            Icon(
+              Icons.create_new_folder_outlined,
+              size: 42,
+              color: colors.primary,
+            ),
             const SizedBox(height: 12),
-            Text('لا توجد مشاريع محفوظة', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'لا توجد مشاريع محفوظة',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 6),
             Text(
               'أنشئ مشروعك الأول. ستُحفظ بيانات مساحة العمل على هذا الجهاز.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
@@ -432,10 +448,7 @@ class _CreateProjectDialogState extends State<_CreateProjectDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('إلغاء'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('إنشاء'),
-        ),
+        FilledButton(onPressed: _submit, child: const Text('إنشاء')),
       ],
     );
   }

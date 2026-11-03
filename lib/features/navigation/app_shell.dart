@@ -54,7 +54,8 @@ class _AppShellState extends State<AppShell> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _loadError = 'تعذّر تحميل المشاريع المحفوظة. تحقق من مساحة التخزين ثم أعد المحاولة.';
+        _loadError =
+            'تعذّر تحميل المشاريع المحفوظة. تحقق من مساحة التخزين ثم أعد المحاولة.';
       });
     }
   }
@@ -152,19 +153,22 @@ class _AppShellState extends State<AppShell> {
       ),
       const FeaturePlaceholderScreen(
         title: 'مستكشف قواعد البيانات',
-        description: 'ستتمكن هنا من إنشاء قواعد البيانات والمخططات والجداول ومراجعة العلاقات بينها.',
+        description:
+            'ستتمكن هنا من إنشاء قواعد البيانات والمخططات والجداول ومراجعة العلاقات بينها.',
         phase: 6,
         icon: Icons.storage,
       ),
       const FeaturePlaceholderScreen(
         title: 'محرر استعلامات T-SQL',
-        description: 'محرر للأوامر مع التلوين والتنفيذ والنتائج ورسائل الأخطاء. سيُفعّل بعد اكتمال المحرك الأساسي.',
+        description:
+            'محرر للأوامر مع التلوين والتنفيذ والنتائج ورسائل الأخطاء. سيُفعّل بعد اكتمال المحرك الأساسي.',
         phase: 7,
         icon: Icons.terminal,
       ),
       const FeaturePlaceholderScreen(
         title: 'الأكاديمية التعليمية',
-        description: 'دروس عربية، أمثلة عملية، تمارين واختبارات مرتبطة بقاعدة البيانات التي تتدرب عليها.',
+        description:
+            'دروس عربية، أمثلة عملية، تمارين واختبارات مرتبطة بقاعدة البيانات التي تتدرب عليها.',
         phase: 15,
         icon: Icons.school,
       ),
@@ -179,14 +183,12 @@ class _AppShellState extends State<AppShell> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         body: SafeArea(
-          child: IndexedStack(
-            index: _selectedIndex,
-            children: screens,
-          ),
+          child: IndexedStack(index: _selectedIndex, children: screens),
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedIndex,
-          onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+          onDestinationSelected: (index) =>
+              setState(() => _selectedIndex = index),
           destinations: destinations,
         ),
       ),
@@ -222,7 +224,9 @@ class _MoreScreen extends StatelessWidget {
           child: ListTile(
             leading: const Icon(Icons.verified_user_outlined),
             title: const Text('ملف التوافق الدراسي المستهدف'),
-            subtitle: const Text('SQL Server 2014 — Compatibility Level 120 (سيُفعّل تدريجيًا)'),
+            subtitle: const Text(
+              'SQL Server 2014 — Compatibility Level 120 (سيُفعّل تدريجيًا)',
+            ),
             trailing: const Icon(Icons.info_outline),
           ),
         ),
@@ -270,7 +274,9 @@ class _MoreScreen extends StatelessWidget {
           child: ListTile(
             leading: const Icon(Icons.cloud_off_outlined),
             title: const Text('وضع العمل'),
-            subtitle: const Text('محلي دون الحاجة إلى حساب أو اتصال دائم بالإنترنت'),
+            subtitle: const Text(
+              'محلي دون الحاجة إلى حساب أو اتصال دائم بالإنترنت',
+            ),
           ),
         ),
         const SizedBox(height: 16),

@@ -66,8 +66,9 @@ class _MemoryWorkspaceRepository implements WorkspaceRepository {
 }
 
 void main() {
-  testWidgets('app displays the SQL Student Studio home and navigation',
-      (tester) async {
+  testWidgets('app displays the SQL Student Studio home and navigation', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       SqlStudentStudioApp(repository: _MemoryWorkspaceRepository()),
     );
@@ -88,10 +89,7 @@ void main() {
     await tester.tap(find.byTooltip('إنشاء مشروع'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byType(TextFormField),
-      'قاعدة بيانات الجامعة',
-    );
+    await tester.enterText(find.byType(TextFormField), 'قاعدة بيانات الجامعة');
     await tester.tap(find.widgetWithText(FilledButton, 'إنشاء'));
     await tester.pumpAndSettle();
 
@@ -99,8 +97,9 @@ void main() {
     expect(find.text('تم إنشاء المشروع وحفظه على الجهاز.'), findsOneWidget);
   });
 
-  testWidgets('database and query screens clearly show their planned status',
-      (tester) async {
+  testWidgets('database and query screens clearly show their planned status', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       SqlStudentStudioApp(repository: _MemoryWorkspaceRepository()),
     );
@@ -117,8 +116,9 @@ void main() {
     expect(find.text('مخطط تنفيذها في المرحلة 7'), findsOneWidget);
   });
 
-  testWidgets('student can open and delete a project with confirmation',
-      (tester) async {
+  testWidgets('student can open and delete a project with confirmation', (
+    tester,
+  ) async {
     final repository = _MemoryWorkspaceRepository();
     await repository.createProject('مشروع الاختبار');
 
@@ -140,8 +140,9 @@ void main() {
 
     expect(find.text('لا توجد مشاريع محفوظة'), findsOneWidget);
   });
-  testWidgets('student can change and persist the app theme preference',
-      (tester) async {
+  testWidgets('student can change and persist the app theme preference', (
+    tester,
+  ) async {
     final repository = _MemoryWorkspaceRepository();
     await tester.pumpWidget(SqlStudentStudioApp(repository: repository));
     await tester.pumpAndSettle();
@@ -157,5 +158,4 @@ void main() {
     expect(repository.themeMode, 'dark');
     expect(find.text('مظهر التطبيق'), findsOneWidget);
   });
-
 }

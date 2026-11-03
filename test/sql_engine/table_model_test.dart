@@ -8,7 +8,11 @@ void main() {
       final table = TableModel(
         name: 'Students',
         columns: const [
-          ColumnModel(name: 'ID', dataType: SqlDataType.intType, isNullable: false),
+          ColumnModel(
+            name: 'ID',
+            dataType: SqlDataType.intType,
+            isNullable: false,
+          ),
           ColumnModel(name: 'Name', dataType: SqlDataType.nvarcharType),
         ],
       );
@@ -39,10 +43,7 @@ void main() {
     test('StoredRow holds rowId and SqlRow map', () {
       final row = StoredRow(
         rowId: 10,
-        values: {
-          'ID': SqlValue.integer(1),
-          'Name': SqlValue.nvarchar('Ahmed'),
-        },
+        values: {'ID': SqlValue.integer(1), 'Name': SqlValue.nvarchar('Ahmed')},
       );
 
       expect(row.rowId, equals(10));

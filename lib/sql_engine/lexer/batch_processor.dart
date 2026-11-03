@@ -18,7 +18,9 @@ class BatchProcessor {
       final trimmedLine = line.trim();
 
       // Check if line is an isolated GO separator
-      if (!inSingleQuoteString && !inBlockComment && trimmedLine.toUpperCase() == 'GO') {
+      if (!inSingleQuoteString &&
+          !inBlockComment &&
+          trimmedLine.toUpperCase() == 'GO') {
         final batchText = currentBatch.toString().trim();
         if (batchText.isNotEmpty) {
           batches.add(batchText);

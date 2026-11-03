@@ -42,19 +42,22 @@ GO
       expect(batches[0], equals('SELECT 1;'));
     });
 
-    test('ignores GO inside single-quote string literal with escaped quotes', () {
-      const script = '''
+    test(
+      'ignores GO inside single-quote string literal with escaped quotes',
+      () {
+        const script = '''
 SELECT 'It''s GO time' AS TestCol;
 GO
 SELECT * FROM Students;
 ''';
 
-      final batches = processor.process(script);
+        final batches = processor.process(script);
 
-      expect(batches.length, equals(2));
-      expect(batches[0], contains("'It''s GO time'"));
-      expect(batches[1], equals('SELECT * FROM Students;'));
-    });
+        expect(batches.length, equals(2));
+        expect(batches[0], contains("'It''s GO time'"));
+        expect(batches[1], equals('SELECT * FROM Students;'));
+      },
+    );
 
     test('ignores GO inside line comments and block comments', () {
       const script = '''
