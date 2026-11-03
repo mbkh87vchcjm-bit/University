@@ -1,114 +1,75 @@
 # SQL Student Studio
 
-> **T-SQL Educational Environment for Android**
-> An offline-first database development environment with an SSMS-inspired interface designed for IT and Computer Science students without a PC.
+**مختبر تعليمي محلي لتعلّم قواعد البيانات وT-SQL على Android.**
 
----
+SQL Student Studio موجّه لطلاب تقنية المعلومات وعلوم الحاسوب الذين يحتاجون إلى التدريب على مفاهيم قواعد البيانات من الهاتف، دون تثبيت Microsoft SQL Server على الجهاز.
 
-## 📱 About The Project
+> **مهم:** التطبيق يبني محركًا تعليميًا مستقلًا بلغة Dart. ليس Microsoft SQL Server، ولا يشغّل خدمة SQL Server الحقيقية على Android. كل ميزة محاكية ستُعرّف بحدودها واختباراتها.
 
-**SQL Student Studio** provides an experience similar to Microsoft SQL Server Management Studio (SSMS) directly on Android smartphones and tablets. It is built specifically for educational purposes to enable students to write, practice, and learn **T-SQL** and database design offline.
+## حالة التطوير
 
-> **Note**: This application is an educational simulation environment for Android built with Flutter & Dart. It does NOT attempt to run Microsoft SQL Server natively on mobile devices. Implementation proceeds incrementally across isolated PRs according to [`docs/roadmap.md`](./docs/roadmap.md). PR #5 establishes the **Foundation & Architecture**, providing core types, models, batch processing, storage abstractions, documentation, and unit tests. The full Lexer, Parser, AST, Validator, and Execution Engine are scheduled for subsequent PRs (#6–#13).
+المشروع يُطوّر على مراحل. راجع [خارطة التطوير v2.0](docs/roadmap.md) لمعرفة ترتيب المراحل وبوابات قبولها.
 
----
+### المنفذ في المرحلة التأسيسية الحالية
 
-## ✨ Feature Specification Scope
+- هوية التطبيق وحزمة Android باسم SQL Student Studio.
+- تنقل رئيسي عربي من خمسة أقسام: الرئيسية، قواعد البيانات، محرر SQL، التعلم، والمزيد.
+- إنشاء مشاريع مساحة العمل محليًا.
+- عرض المشاريع المحفوظة وفتحها وتحديث آخر وقت فتح.
+- حذف المشروع بعد تأكيد المستخدم.
+- استعادة آخر مشروع مفتوح من سجل SQLite عند تشغيل التطبيق.
+- شاشات توضح بصدق أن مستكشف قواعد البيانات ومحرر T-SQL والأكاديمية لم تُنفّذ بعد.
 
-### 🟢 MVP Target Scope
-*Note: These are overall MVP goals, implemented incrementally across PR #5 through PR #13.*
+### أساس محرك SQL الموجود حاليًا
 
-- 📁 **Database Explorer**: Tree view navigation for Databases and Tables (`dbo` schema).
-- 📝 **Query Editor**: Monospace SQL editor with line numbers, basic syntax highlighting, and execution controls.
-- ⚡ **Execution Engine**: Standalone T-SQL execution (`CREATE DATABASE`, `USE`, `CREATE TABLE`, `INSERT`, `SELECT`, `UPDATE`, `DELETE`, `WHERE`, `ORDER BY`, `DISTINCT`, `TOP`, `GO` batch separator).
-- 🔒 **Integrity Constraints**: Single & Composite `PRIMARY KEY`, `FOREIGN KEY`, `NOT NULL`, `DEFAULT`, `UNIQUE`.
-- 📊 **Results & Messages**: Tabbed view displaying result grids, affected row counts (`INSERT`/`UPDATE`/`DELETE`), returned rows (`SELECT`), execution durations, and syntax diagnostics (`SqlError`).
+- نماذج أولية لأنواع قيم SQL.
+- معالج دفعات GO.
+- نماذج الجداول والأعمدة والقيود.
+- واجهة تجريدية لتخزين بيانات قواعد الطلاب.
+- نموذج تشخيص أخطاء SQL.
 
-### 🟡 Phase 2 & 3 Planned Features
-- 📁 **Views Support**: Database Explorer tree view for Views (`CREATE VIEW` in Phase 3).
-- 💡 **IntelliSense Autocomplete**: Real-time schema suggestions for database objects, tables, and columns (offline).
-- 🛠️ **Visual Table Designer**: Visual table creation interface generating standard `CREATE TABLE` scripts.
-- 🕸️ **ER Diagram Viewer**: Visual rendering of entity relationship diagrams built from primary/foreign key definitions.
-- 📦 **Offline & Project Backup**: Save scripts, export query results to CSV/JSON, and package whole projects into `.zip` archives.
+وجود هذه النماذج لا يعني أن تنفيذ CREATE/SELECT/INSERT أو غيرها متاح بعد. انظر [مصفوفة دعم SQL](docs/sql-supported.md).
 
----
+## التوافق الدراسي
 
-## 🏗️ Architecture & Component Implementation Status
+- خط الأساس المستهدف: SQL Server 2014، Compatibility Level 120، لمطابقة بيئة المعمل الجامعي المذكورة.
+- ستُضاف ملفات توافق للإصدارات الأحدث بشكل منفصل وبعد اختبار قواعد كل إصدار.
+- لا تُنفّذ الميزات اللاحقة لإصدار 2014 في ملف التوافق الأساسي.
+- التطبيق يعمل محليًا، وبيانات مساحة العمل منفصلة عن بيانات قواعد الطلاب التي سيُنفذ تخزينها في مرحلة لاحقة.
 
-- **Primary Language & Framework**: Dart & Flutter (Cross-platform mobile application)
-- **UI Architecture**: Material 3 & Decoupled Features layout (`lib/features/`, `lib/app/`)
-- **App Metadata Storage**: SQLite / Local storage for projects, saved scripts, history, settings.
-- **SQL Execution Engine**: Pure Dart standalone engine (`lib/sql_engine/`)
+## بنية المستودع
 
-```
-Flutter Application Layer (Implemented PR #5 Foundation)
-│
-├── App Layout (lib/app/, lib/core/, lib/features/)
-│   ├── Navigation & Theme (Implemented Foundation)
-│   ├── HomeScreen UI Scaffold (Implemented Foundation)
-│   └── App Storage (SQLite Metadata)
-│
-└── SQL Student Engine (Pure Dart - lib/sql_engine/)
-    ├── Batch Processor (GO) [🟢 Implemented PR #5]
-    ├── SqlValue Types & SqlError [🟢 Implemented PR #5]
-    ├── TableModel & ConstraintModel [🟢 Implemented PR #5]
-    ├── DatabaseStorage Abstraction [🟢 Implemented PR #5]
-    ├── Lexer [🟡 Planned PR #7]
-    ├── Parser (Recursive Descent + Pratt) [🟡 Planned PR #8]
-    ├── AST Statement & Expression Nodes [🟡 Planned PR #8]
-    ├── Semantic Validator [🟡 Planned PR #9]
-    ├── Execution Engine [🟡 Planned PR #10]
-    └── Persistent Student DB Store [🟡 Planned PR #9]
-```
+- `lib/app/`: تكوين التطبيق والثيمات.
+- `lib/core/models/`: نماذج مساحة العمل.
+- `lib/core/storage/`: تخزين بيانات التطبيق المحلية.
+- `lib/features/`: واجهات الرئيسية والتنقل والشاشات.
+- `lib/sql_engine/`: محرك T-SQL المستقل (قيد التطوير).
+- `test/`: اختبارات الوحدة والواجهة.
+- `docs/`: المعمارية، مصفوفة التوافق، الاختبارات، وخطة التطوير.
 
----
+## التطوير والاختبارات
 
-## 📂 Project Structure & Documentation
+يتطلب التطوير Flutter SDK المستقر وDart المتوافق مع قيد SDK الموجود في `pubspec.yaml`.
 
-Detailed architecture and design specifications are located in the [`docs/`](./docs) directory:
-
-- 📑 [`docs/architecture.md`](./docs/architecture.md) — Architectural principles & standalone `lib/sql_engine/` structure.
-- 📑 [`docs/sql-supported.md`](./docs/sql-supported.md) — T-SQL feature matrix & data types specification.
-- 📑 [`docs/database-model.md`](./docs/database-model.md) — App metadata models, `SqlValue` types, and `DatabaseStorage` engine structures.
-- 📑 [`docs/ui.md`](./docs/ui.md) — Flutter UI layout, components & feature categorization.
-- 📑 [`docs/parser.md`](./docs/parser.md) — Lexer, Pratt & Recursive Descent parser, AST, `GO` batch processing & validator pipeline.
-- 📑 [`docs/testing.md`](./docs/testing.md) — Unit, integration, error diagnosis, and benchmark test suite.
-- 📑 [`docs/roadmap.md`](./docs/roadmap.md) — Multi-PR implementation roadmap (PR #5 through PR #20).
-
----
-
-## 🚀 Execution Benchmark Example (Target Engine Output)
-
-```sql
-CREATE DATABASE University;
-GO
-
-USE University;
-GO
-
-CREATE TABLE Students
-(
-    ID INT PRIMARY KEY,
-    Name NVARCHAR(100) NOT NULL,
-    Age INT
-);
-GO
-
-INSERT INTO Students
-VALUES
-(1, 'Ahmed', 20),
-(2, 'Ali', 21);
-GO
-
-SELECT *
-FROM Students
-WHERE Age >= 20
-ORDER BY Name;
-GO
+```bash
+flutter pub get
+dart format .
+flutter analyze
+flutter test
+flutter build apk --debug
+flutter build apk --release
 ```
 
----
+يُبنى APK عبر GitHub Actions ويُرفع كـ artifact باسم `sql-student-studio-release-apk`.
 
-## 📜 License
+## سياسة الجودة
 
-License not yet selected.
+- لا تُعرض ميزة على أنها منفذة قبل نجاح اختبارات الوحدة والتكامل والبناء المرتبطة بها.
+- لا تُخترع أرقام أخطاء Microsoft؛ تستخدم أخطاء المحاكي نطاقًا خاصًا عند عدم وجود تطابق موثق.
+- يجب أن تكون عمليات الكتابة ذرّية: فشل الأمر لا يترك تغييرات جزئية.
+- لا يُحذف عمل الطالب عند التنقل أو ظهور خطأ.
+- لا تُخلط بيانات التطبيق الوصفية مع بيانات قواعد الطلاب.
+
+## خارطة التطوير
+
+راجع [docs/roadmap.md](docs/roadmap.md) للخطة ذات المراحل الخمس عشرة.
