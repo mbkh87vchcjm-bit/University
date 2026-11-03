@@ -1,45 +1,73 @@
-# UI Component Categorization & Mobile UX
+# SQL Student Studio — Mobile Interface Specification
 
-## Overview
-SQL Student Studio provides a mobile-optimized SSMS workflow using Flutter Material 3 components (bottom sheets, drawer, tabbed interfaces, monospace code editor, scrollable data grids).
+## Current Phase 1 UI Status
 
----
+The app shell now exposes five Arabic-first destinations:
 
-## UI Feature Categorization
+1. **Home:** local workspace projects, active project, create/open/delete actions, and honest empty/error/loading states.
+2. **Databases:** reserved for the database catalog and Object Explorer (Phase 6).
+3. **Query:** reserved for the T-SQL editor and result workspace (Phase 7).
+4. **Learn:** reserved for structured Arabic lessons and exercises (Phase 15).
+5. **More:** shows the compatibility profile, active workspace, and offline/simulator disclosures.
 
-### 🟢 MVP Baseline Target Scope
-1. **Home Screen (`lib/features/home/`)**
-   - New Project & Open Project buttons.
-   - Recent Projects list.
-   - Recent Queries list.
-2. **Database Explorer (`lib/features/explorer/`)**
-   - Database and Table tree view (`dbo` schema).
-   - Basic context menus (View Data, Script Table, Delete).
-3. **Query Editor (`lib/features/editor/`)**
-   - Single & Multi-line SQL text editor with line numbers and monospace font.
-   - Basic Syntax Highlighting (Keywords, Strings, Numbers, Comments).
-   - Execution controls: `▶ Execute` (Run All or Selection).
-   - Basic Save/Open SQL script actions.
-4. **Results & Messages (`lib/features/results/`)**
-   - Scrollable tabular result grid.
-   - Execution messages (Returned rows count for `SELECT`, Affected rows count for `INSERT`/`UPDATE`/`DELETE`, execution time in ms, diagnostic error display).
-5. **Projects (`lib/features/projects/`)**
-   - Basic project workspace creation.
+The home screen's project metadata is persisted in a dedicated SQLite application database. It is not the student SQL database. No placeholder database or query results are shown as if they were real.
 
----
+## Navigation and Mobile UX
 
-### 🟡 Phase 2 Features (Post-MVP)
-1. **Multi-Tab Query Editor**: Browser-like tabbed interface for editing multiple scripts simultaneously.
-2. **Schema-Aware IntelliSense Autocomplete**: Contextual suggestions based on active schema metadata (Tables, Columns).
-3. **SQL Formatter**: Code beautifier for T-SQL syntax formatting.
-4. **Visual Table Designer (`lib/features/table_designer/`)**: GUI grid for table structure creation generating standard `CREATE TABLE` scripts.
-5. **ER Diagram Viewer (`lib/features/erd/`)**: Entity Relationship graph rendering PK/FK links.
-6. **Advanced File Management & CSV / JSON Export (`lib/features/files/`)**: Advanced file manager, export results grid to CSV and JSON formats.
+- Material 3 NavigationBar with five persistent destinations.
+- RTL is used for Arabic application navigation and explanations.
+- SQL source editors must use LTR text direction in the query workspace.
+- Layout is scrollable and designed for narrow Android screens.
+- System theme is followed by default; dark and light themes are defined.
+- Destructive project deletion requires confirmation.
+- The active/most recently opened workspace is restored from local metadata.
+- Loading, empty, and error states must remain visible and actionable.
+- No visible action may be a dead button. An unimplemented feature is shown as planned with its phase.
 
----
+## Phase 1 — Workspace UI
 
-### 🔵 Phase 3 & Future Capabilities
-1. **Views Support (`lib/features/explorer/`)**: Database Explorer tree node and engine support for Views (`CREATE VIEW`).
-2. **Interactive Tutorial & Practice Mode**: Self-paced SQL lessons with automated validation.
-3. **Project ZIP Backup & Restore**: Full archive packaging and restoration.
-4. **Optional AI Error Assistant**: Local or optional cloud helper providing human-friendly syntax guidance for execution errors.
+Implemented:
+- Home workspace.
+- Create a project with a required name and a 60-character limit.
+- List saved projects.
+- Open a project and update its last-opened timestamp.
+- Delete a project only after confirmation.
+- Restore the most recently opened project when the application starts.
+- Display compatibility and simulator disclosures.
+
+Not implemented yet:
+- Student database engine and Object Explorer.
+- Query editor, SQL execution, result grid, and query history.
+- Learning modules, lessons, assessment, and progress tracking.
+- Table Designer, ERD, administration tools, export, and project backup.
+
+## Query Workspace (Phase 7)
+
+Planned structure:
+- Context row: active project, database, compatibility profile, and unsaved status.
+- SQL editor: monospace font, line numbers, syntax highlighting, selection execution, run-batch, run-all, save, and open.
+- Touch keyboard row for common SQL syntax without replacing the Android keyboard.
+- Results / Messages tabs, with clear execution and affected-row counts.
+- SQL source is LTR; Arabic explanations and messages are RTL.
+
+## Database Explorer (Phase 6 onward)
+
+Planned tree:
+- Databases
+- Security
+- Schemas
+- Tables
+- Views
+- Programmability
+- Storage
+
+A tree node appears as functional only after the matching engine capability is implemented and tested.
+
+## Accessibility and Reliability
+
+- Scalable text and accessible touch targets.
+- Preserve editor contents and cursor selection across navigation and rotation.
+- Do not clear a student's work after a SQL error.
+- Show confirmation for destructive database/table operations.
+- Keep Arabic, English, and Unicode SQL values distinct in storage and rendering.
+- Show clear support status and simulator limitations for advanced administration screens.
