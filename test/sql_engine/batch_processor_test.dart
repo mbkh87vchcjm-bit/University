@@ -41,7 +41,7 @@ SELECT 3;
       final batches = processor.process(script);
 
       expect(batches, hasLength(2));
-      expect(batches[0], contains("It's GO time"));
+      expect(batches[0], contains("It''s GO time"));
       expect(batches[0], contains('GO\nlast line'));
       expect(batches[1], 'SELECT 3;');
     });
