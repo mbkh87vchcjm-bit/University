@@ -65,9 +65,14 @@ class BatchProcessor {
     final allTokens = SqlLexer().tokenize(script);
     final lines = _lineRanges(script);
     final tokensByLine = <int, List<SqlToken>>{};
+    final multilineBlockCommentStartLines = <int>{};
 
-    // Index tokens once, avoiding a full-token scan for every source line.
+    // Build source-line indexes once, avoiding repeated full-token scans.
     for (final token in allTokens) {
+      if (token.kind == SqlTokenKind.blockComment &&
+          token.endLine > token.startLine) {
+        multilineBlockCommentStartLines.add(token.startLine);
+      }
       if (token.isComment || token.isEndOfFile) continue;
       tokensByLine.putIfAbsent(token.startLine, () => <SqlToken>[]).add(token);
     }
@@ -84,13 +89,7 @@ class BatchProcessor {
       }
 
       final separator = lineTokens.first;
-      final trailingMultilineComment = allTokens.any((token) {
-        return token.kind == SqlTokenKind.blockComment &&
-            token.startLine == line.number &&
-            token.startOffset > separator.startOffset &&
-            token.endLine > line.number;
-      });
-      if (trailingMultilineComment) {
+      if (multilineBlockCommentStartLines.contains(line.number)) {
         _invalidGo(
           separator,
           'A GO separator cannot be followed by a multi-line block comment. Put the comment on a separate line.',
