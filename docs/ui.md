@@ -33,6 +33,7 @@ Implemented:
 - Open a project and update its last-opened timestamp.
 - Delete a project only after confirmation.
 - Restore the most recently opened project when the application starts.
+- Choose System, Light, or Dark appearance and persist the preference locally.
 - Display compatibility and simulator disclosures.
 
 Not implemented yet:
