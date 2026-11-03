@@ -36,9 +36,10 @@ These tests use sqflite_common_ffi and a temporary SQLite database file on the C
 
 ### SQL foundation and phase 2 tests
 
-- BatchProcessor splits isolated GO separators with case-insensitive handling.
-- It ignores GO in quoted strings and comments.
-- It handles empty batches and CRLF line endings.
+- SqlLexer tokenizes the documented subset of keywords, Unicode identifiers, variables, quoted/bracketed identifiers, strings, numeric/binary literals, operators, punctuation, and comments.
+- Lexer tokens retain source spans, batch numbers, and structured diagnostics; nested block comments and CRLF/LF are covered.
+- BatchProcessor uses lexer tokens to split isolated GO lines, preserves positive repeat-count metadata, and rejects malformed repeat counts.
+- GO inside strings, comments, and quoted/bracketed identifiers is ignored as a separator.
 - SqlValue literal formatting and basic equality are tested.
 - TableModel row ID allocation, foreign-key column-count validation, and optional column type metadata are tested.
 - SqlTypeSpec validates parameter ranges for DECIMAL/NUMERIC, FLOAT, CHAR/VARCHAR, NCHAR/NVARCHAR, BINARY/VARBINARY, TIME, DATETIME2, and DATETIMEOFFSET.
@@ -47,6 +48,19 @@ These tests use sqflite_common_ffi and a temporary SQLite database file on the C
 - SqlCollation tests case/accent profile behavior and the documented Arabic combining-mark subset.
 
 **Important:** These are component-level foundations. They do not indicate that a complete T-SQL lexer/parser, SQL Server collation engine, CREATE/ALTER/DROP, INSERT/SELECT/UPDATE/DELETE, constraints, transactions, or persisted student database is implemented.
+
+
+
+### Phase 3 lexer and batch tests
+
+- Keyword and identifier classification, including Arabic identifiers and variables.
+- Escaped bracketed identifiers, quoted identifiers, Unicode string literals, numeric/exponent literals, and hexadecimal binary literals.
+- Line and nested block comments, including comment omission mode.
+- Source offset/line/column accuracy across CRLF and multiline strings.
+- Stable diagnostics for unterminated strings/identifiers/comments, malformed exponents/binary literals, and invalid characters.
+- Lexer-aware GO separation, repeat-count metadata, malformed repeat-count rejection, and GO text inside non-code lexical constructs.
+
+The lexer is a documented subset. It does not parse SQL statements or make them executable.
 
 ## 3. Required CI quality gates
 

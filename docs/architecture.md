@@ -65,7 +65,7 @@ lib/
     navigation/        # five-destination app shell
   sql_engine/
     errors/            # structured SQL diagnostic model
-    lexer/             # GO batch processor
+    lexer/             # token model, T-SQL scanner, and GO batch processor
     models/            # database/table/constraint models
     storage/           # student database storage interface
     types/             # SQL value hierarchy
