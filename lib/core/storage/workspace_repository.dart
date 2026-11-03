@@ -8,13 +8,15 @@ abstract interface class WorkspaceRepository {
   Future<WorkspaceProject> createProject(String name);
   Future<WorkspaceProject> openProject(int id);
   Future<void> deleteProject(int id);
+  Future<String> getThemeMode();
+  Future<void> setThemeMode(String mode);
   Future<void> close();
 }
 
 /// Stores application workspace metadata separately from student SQL data.
 class SqliteWorkspaceRepository implements WorkspaceRepository {
   static const _databaseName = 'sql_student_studio_workspace.db';
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2;
 
   Database? _database;
   Future<Database>? _openingDatabase;
@@ -50,9 +52,30 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
           'CREATE INDEX idx_workspace_projects_last_opened '
           'ON workspace_projects(last_opened_at DESC)',
         );
+        await db.execute('''
+          CREATE TABLE app_settings (
+            setting_key TEXT PRIMARY KEY,
+            setting_value TEXT NOT NULL
+          )
+        ''');
+        await db.insert('app_settings', {
+          'setting_key': 'theme_mode',
+          'setting_value': 'system',
+        });
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // Future workspace schema migrations are added here, one version at a time.
+        if (oldVersion < 2) {
+          await db.execute('''
+            CREATE TABLE app_settings (
+              setting_key TEXT PRIMARY KEY,
+              setting_value TEXT NOT NULL
+            )
+          ''');
+          await db.insert('app_settings', {
+            'setting_key': 'theme_mode',
+            'setting_value': 'system',
+          });
+        }
       },
     );
   }
@@ -118,6 +141,37 @@ class SqliteWorkspaceRepository implements WorkspaceRepository {
   Future<void> deleteProject(int id) async {
     final db = await _db;
     await db.delete('workspace_projects', where: 'id = ?', whereArgs: [id]);
+  }
+
+  @override
+  Future<String> getThemeMode() async {
+    final db = await _db;
+    final rows = await db.query(
+      'app_settings',
+      columns: ['setting_value'],
+      where: 'setting_key = ?',
+      whereArgs: ['theme_mode'],
+      limit: 1,
+    );
+    if (rows.isEmpty) return 'system';
+    final value = rows.single['setting_value'];
+    if (value is! String || !const {'system', 'light', 'dark'}.contains(value)) {
+      return 'system';
+    }
+    return value;
+  }
+
+  @override
+  Future<void> setThemeMode(String mode) async {
+    if (!const {'system', 'light', 'dark'}.contains(mode)) {
+      throw ArgumentError.value(mode, 'mode', 'Unsupported theme mode.');
+    }
+    final db = await _db;
+    await db.insert(
+      'app_settings',
+      {'setting_key': 'theme_mode', 'setting_value': mode},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   @override
