@@ -25,12 +25,18 @@ sealed class SqlValue {
   factory SqlValue.smallMoney(String value) = SqlSmallMoney;
   factory SqlValue.binary(List<int> value) = SqlBinary;
   factory SqlValue.varBinary(List<int> value) = SqlVarBinary;
-  factory SqlValue.dateTime2(DateTime value, {int scale = 7}) = SqlDateTime2;
+  factory SqlValue.dateTime2(DateTime value, {int scale = 7}) =>
+      SqlDateTime2(value, scale: scale);
   factory SqlValue.dateTimeOffset(
     DateTime value, {
     int offsetMinutes = 0,
     int scale = 7,
-  }) = SqlDateTimeOffset;
+  }) =>
+      SqlDateTimeOffset(
+        value,
+        offsetMinutes: offsetMinutes,
+        scale: scale,
+      );
   factory SqlValue.uniqueIdentifier(String value) = SqlUniqueIdentifier;
 
   /// Returns the standard T-SQL literal string representation.
