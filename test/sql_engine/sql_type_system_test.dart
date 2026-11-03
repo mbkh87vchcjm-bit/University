@@ -319,13 +319,53 @@ void main() {
       );
     });
 
-    test('DATETIME2 stores requested scale metadata', () {
+    test('DATETIME rounds to SQL Server 1/300-second display increments', () {
       final converted = SqlTypeSystem.convert(
-        SqlValue.varchar('2026-11-03T10:15:30.123'),
-        SqlTypeSpec.dateTime2(scale: 3),
+        SqlValue.varchar('2026-11-03T10:15:30.002'),
+        SqlTypeSpec.dateTime(),
+      ) as SqlDateTime;
+      expect(converted.toSqlLiteral(), "'2026-11-03T10:15:30.003'");
+    });
+
+    test('DATETIME rejects an input that rounds outside its maximum', () {
+      expect(
+        () => SqlTypeSystem.convert(
+          SqlValue.varchar('9999-12-31T23:59:59.999'),
+          SqlTypeSpec.dateTime(),
+        ),
+        throwsA(isA<SqlTypeException>()),
       );
-      expect(converted, isA<SqlDateTime2>());
-      expect((converted as SqlDateTime2).scale, 3);
+    });
+
+    test('DATETIME2 rounds to the declared scale and retains scale metadata', () {
+      final converted = SqlTypeSystem.convert(
+        SqlValue.varchar('2026-11-03T10:15:30.1236'),
+        SqlTypeSpec.dateTime2(scale: 3),
+      ) as SqlDateTime2;
+      expect(converted.scale, 3);
+      expect(converted.toSqlLiteral(), "'2026-11-03T10:15:30.124'");
+    });
+
+    test('DATETIMEOFFSET preserves the written numeric offset', () {
+      final converted = SqlTypeSystem.convert(
+        SqlValue.varchar('2026-11-03T10:15:30.123456+05:30'),
+        SqlTypeSpec.dateTimeOffset(scale: 6),
+      ) as SqlDateTimeOffset;
+      expect(converted.offsetMinutes, 330);
+      expect(
+        converted.toSqlLiteral(),
+        "'2026-11-03T10:15:30.123456+05:30'",
+      );
+    });
+
+    test('DATETIMEOFFSET rejects offsets outside the supported range', () {
+      expect(
+        () => SqlTypeSystem.convert(
+          SqlValue.varchar('2026-11-03T10:15:30+14:01'),
+          SqlTypeSpec.dateTimeOffset(),
+        ),
+        throwsA(isA<SqlTypeException>()),
+      );
     });
 
     test('UNIQUEIDENTIFIER validates canonical GUID syntax', () {
