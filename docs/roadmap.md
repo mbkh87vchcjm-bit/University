@@ -46,7 +46,7 @@ Examples of version gating: native JSON functions and Query Store belong to SQL 
 1. **Correctness before breadth:** implement a small, tested SQL subset before adding many commands.
 2. **Honest support matrix:** every feature is marked Implemented, Partial, Planned, or Unsupported. A menu item must not imply a feature is operational.
 3. **Offline by default:** the core editor, simulator, lessons, projects, and saved work must work without an account or network.
-4. **Safe student sandbox:** all query execution is against a local practice database. Destructive statements show the target database/table and a confirmation where appropriate. A resettable sample workspace is always available.
+4. **Safe student sandbox:** all query execution is against a local practice database. Destructive statements show the target database/table and a confirmation where appropriate. A resettable sample database will be provided after the database engine exists; never fake it during the app-shell phase.
 5. **No silent data loss:** persistence, migrations, backups, and restore operations are tested before release.
 6. **Mobile-first interaction:** the editor, result grid, object explorer, keyboard, dialogs, and navigation are designed for a phone before tablet enhancement.
 7. **Separation of concerns:** the T-SQL engine has no dependency on Flutter widgets or BuildContext. UI code must not parse SQL or mutate database rows directly.
@@ -117,7 +117,7 @@ Use a tree structure that grows with implemented features:
 
 ### Student usability
 
-- First-run onboarding creates or opens a local sample workspace.
+- First-run onboarding offers creation of an empty local workspace. Sample databases are installed only after the storage/catalog engine exists.
 - No fake recent projects, fake timestamps, or sample query history presented as real user data.
 - Empty states explain the next useful action.
 - Error dialogs must not hide the SQL editor or erase the student's work.
@@ -138,13 +138,15 @@ Work:
 - Create the main navigation and real screen routing for Home, Databases, Query, Learn, and More.
 - Remove placeholder buttons and fake recent activity; replace them with working empty states or disable actions until implemented.
 - Add app-level error handling, logging suitable for offline debugging, settings persistence, and schema versioning.
-- Add a sample workspace installer and reset-to-sample action.
+- Provide a clear empty state and create-first-project flow. Defer sample database installation/reset until Phase 6 can create real catalog objects.
+- Persist System/Light/Dark theme selection in the versioned app metadata store.
+- Migrate the workspace metadata schema safely from version 1 to version 2.
 - Keep Android as the release target; maintain other platform folders only if their build configuration remains valid.
 
 Acceptance:
 - No legacy product name or unrelated standalone coursework remains in app/project identity.
 - Navigation works; no dead buttons are presented as functional.
-- Fresh install, app restart, sample workspace creation, and reset work without data loss.
+- Fresh install, create/open/delete project, last-opened restoration, theme preference persistence, and schema v1-to-v2 migration pass without losing existing projects.
 - `flutter analyze`, `flutter test`, debug APK build, and release APK build pass in CI.
 
 ### Phase 2 — SQL Types, Conversion Rules, NULL, and Collation
