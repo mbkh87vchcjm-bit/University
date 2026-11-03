@@ -220,7 +220,8 @@ class SqlTypeSystem {
   }) =>
       convert(value, target, varcharCodePage: varcharCodePage);
 
-  /// Conservative widening rules for future expression binding.
+  /// Bounded SQL Server numeric-precedence subset for future expression binding.
+  /// This is not a complete implicit-conversion matrix or an assignment check.
   static bool canImplicitlyConvert(
     SqlTypeKind source,
     SqlTypeKind target,
@@ -255,16 +256,17 @@ class SqlTypeSystem {
   }
 
   static const Map<SqlTypeKind, int> _numericRank = {
+    SqlTypeKind.bitType: 0,
     SqlTypeKind.tinyIntType: 1,
     SqlTypeKind.smallIntType: 2,
     SqlTypeKind.intType: 3,
     SqlTypeKind.bigIntType: 4,
     SqlTypeKind.smallMoneyType: 5,
-    SqlTypeKind.moneyType: 5,
-    SqlTypeKind.decimalType: 6,
-    SqlTypeKind.numericType: 6,
-    SqlTypeKind.realType: 7,
-    SqlTypeKind.floatType: 8,
+    SqlTypeKind.moneyType: 6,
+    SqlTypeKind.decimalType: 7,
+    SqlTypeKind.numericType: 7,
+    SqlTypeKind.realType: 8,
+    SqlTypeKind.floatType: 9,
   };
 
   static int _boundedInteger(
