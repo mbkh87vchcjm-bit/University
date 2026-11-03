@@ -159,7 +159,7 @@ class SqlTypeSystem {
         );
 
       case SqlTypeKind.dateTimeType:
-        final dateTime = _toDateTime(source, target.displayName);
+        final dateTime = _roundDateTime(_toDateTime(source, target.displayName));
         _checkDateRange(
           dateTime,
           DateTime(1753, 1, 1),
@@ -169,16 +169,16 @@ class SqlTypeSystem {
         return SqlValue.dateTime(dateTime);
 
       case SqlTypeKind.dateTime2Type:
-        final dateTime = _toDateTime(source, target.displayName);
+        final dateTime = _roundDateTimeScale(
+          _toDateTime(source, target.displayName),
+          target.scale!,
+        );
         return SqlValue.dateTime2(dateTime, scale: target.scale!);
 
       case SqlTypeKind.dateTimeOffsetType:
         final offsetValue = source is SqlDateTimeOffset
             ? source
-            : SqlDateTimeOffset(
-                _toDateTime(source, target.displayName),
-                scale: target.scale!,
-              );
+            : _parseDateTimeOffset(_textValue(source), target.scale!);
         if (offsetValue.offsetMinutes.abs() > 14 * 60 ||
             offsetValue.offsetMinutes.abs() == 14 * 60 &&
                 offsetValue.offsetMinutes % 60 != 0) {
@@ -188,7 +188,7 @@ class SqlTypeSystem {
           );
         }
         return SqlValue.dateTimeOffset(
-          offsetValue.value,
+          _roundDateTimeScale(offsetValue.value, target.scale!),
           offsetMinutes: offsetValue.offsetMinutes,
           scale: target.scale!,
         );
@@ -278,7 +278,7 @@ class SqlTypeSystem {
     if (value < minimum || value > maximum) {
       _fail(
         'SSS-TYPE-OVERFLOW',
-        'Value is outside the \${target.displayName} range.',
+        'Value is outside the ${target.displayName} range.',
       );
     }
     return value.toInt();
@@ -389,7 +389,7 @@ class SqlTypeSystem {
     if (value is SqlNChar) return value.value;
     _fail(
       'SSS-TYPE-CONVERSION',
-      'Cannot convert \${value.runtimeType} to a numeric SQL type.',
+      'Cannot convert ${value.runtimeType} to a numeric SQL type.',
     );
   }
 
@@ -460,7 +460,7 @@ class SqlTypeSystem {
         if (!truncate) {
           _fail(
             'SSS-TYPE-TRUNCATION',
-            'Value length $actualLength exceeds \${target.displayName}.',
+            'Value length $actualLength exceeds ${target.displayName}.',
           );
         }
         text = _truncateUtf16(text, maximumLength);
@@ -475,7 +475,7 @@ class SqlTypeSystem {
       SqlTypeKind.varcharType => SqlValue.varchar(text),
       SqlTypeKind.ncharType => SqlValue.nchar(text),
       SqlTypeKind.nvarcharType => SqlValue.nvarchar(text),
-      _ => throw StateError('Unexpected text target \${target.kind}.'),
+      _ => throw StateError('Unexpected text target ${target.kind}.'),
     };
   }
 
@@ -520,7 +520,7 @@ class SqlTypeSystem {
         if (!truncate) {
           _fail(
             'SSS-TYPE-TRUNCATION',
-            'Binary value exceeds \${target.displayName}.',
+            'Binary value exceeds ${target.displayName}.',
           );
         }
         bytes = bytes.sublist(0, maximumLength);
@@ -568,7 +568,7 @@ class SqlTypeSystem {
     }
     _fail(
       'SSS-TYPE-CONVERSION',
-      'Cannot convert \${source.runtimeType} to BINARY/VARBINARY.',
+      'Cannot convert ${source.runtimeType} to BINARY/VARBINARY.',
     );
   }
 
@@ -611,9 +611,12 @@ class SqlTypeSystem {
   /// carries millisecond precision, so this rounds the available input
   /// precision to the nearest representable SQL DATETIME tick.
   static DateTime _roundDateTime(DateTime value) {
-    final ticks = (value.millisecond * 300 / 1000).round();
-    final roundedMilliseconds = (ticks * 1000 / 300).round();
-    if (roundedMilliseconds >= 1000) {
+    // DATETIME stores 1/300-second ticks. Dart stores microseconds, so the
+    // simulator rounds to the nearest SQL tick at its available precision.
+    final totalMicroseconds = value.millisecond * 1000 + value.microsecond;
+    final ticks = (totalMicroseconds * 300 / 1000000).round();
+    final roundedMicroseconds = (ticks * 1000000 / 300).round();
+    if (roundedMicroseconds >= 1000000) {
       return DateTime(
         value.year,
         value.month,
@@ -621,8 +624,6 @@ class SqlTypeSystem {
         value.hour,
         value.minute,
         value.second + 1,
-        0,
-        value.microsecond,
       );
     }
     return DateTime(
@@ -632,8 +633,192 @@ class SqlTypeSystem {
       value.hour,
       value.minute,
       value.second,
-      roundedMilliseconds,
-      value.microsecond,
+      roundedMicroseconds ~/ 1000,
+      roundedMicroseconds % 1000,
+    );
+  }
+
+  /// Rounds DATETIME2/DATETIMEOFFSET to the declared fractional scale.
+  /// Dart DateTime has microsecond precision, therefore scale 7 is retained
+  /// only as metadata; its seventh digit cannot be stored losslessly here.
+  static DateTime _roundDateTimeScale(DateTime value, int scale) {
+    final totalMicroseconds = value.millisecond * 1000 + value.microsecond;
+    final factor = _powerOfTen(6 - (scale > 6 ? 6 : scale));
+    final rounded = ((totalMicroseconds + factor ~/ 2) ~/ factor) * factor;
+    if (rounded >= 1000000) {
+      return DateTime(
+        value.year,
+        value.month,
+        value.day,
+        value.hour,
+        value.minute,
+        value.second + 1,
+      );
+    }
+    return DateTime(
+      value.year,
+      value.month,
+      value.day,
+      value.hour,
+      value.minute,
+      value.second,
+      rounded ~/ 1000,
+      rounded % 1000,
+    );
+  }
+
+  static SqlDateTimeOffset _parseDateTimeOffset(String input, int scale) {
+    final text = input.trim();
+    final zoneMatch = RegExp(
+      r'^(.*?)(Z|([+-])(\d{2}):(\d{2}))
+
+  static void _checkDateRange(
+    DateTime value,
+    DateTime minimum,
+    DateTime maximum,
+    String typeName,
+  ) {
+    if (value.isBefore(minimum) || value.isAfter(maximum)) {
+      _fail(
+        'SSS-TYPE-DATE-RANGE',
+        'Value is outside the supported $typeName date range.',
+      );
+    }
+  }
+
+  static String _timeText(SqlValue source) {
+    if (source is SqlTime) return source.value;
+    if (source is SqlDateTime) return _formatTime(source.value);
+    if (source is SqlDateTime2) return _formatTime(source.value);
+    if (source is SqlDateTimeOffset) return _formatTime(source.value);
+    return _textValue(source).trim();
+  }
+
+  static String _formatTime(DateTime value) {
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    final second = value.second.toString().padLeft(2, '0');
+    final hundredNanoseconds =
+        (value.millisecond * 1000 + value.microsecond) * 10;
+    final fraction = hundredNanoseconds.toString().padLeft(7, '0');
+    return '$hour:$minute:$second.$fraction';
+  }
+
+  static String _normalizeTime(String input, int scale) {
+    final match = _timePattern.firstMatch(input.trim());
+    if (match == null) {
+      _fail(
+        'SSS-TYPE-TIME',
+        'TIME must be in HH:mm:ss[.fffffff] format.',
+      );
+    }
+    final hour = int.parse(match.group(1)!);
+    final minute = int.parse(match.group(2)!);
+    final second = int.parse(match.group(3)!);
+    final fraction = match.group(4) ?? '';
+    final fractionTicks = int.parse(fraction.padRight(7, '0'));
+    final totalTicks =
+        ((hour * 3600 + minute * 60 + second) * 10000000) +
+            fractionTicks;
+    final factor = _powerOfTen(7 - scale);
+    final roundedTicks = ((totalTicks + factor ~/ 2) ~/ factor) * factor;
+    if (roundedTicks >= 86400 * 10000000) {
+      _fail(
+        'SSS-TYPE-TIME-RANGE',
+        'Rounded TIME value would exceed 23:59:59.',
+      );
+    }
+    final wholeSeconds = roundedTicks ~/ 10000000;
+    final remainingTicks = roundedTicks % 10000000;
+    final resultHour = wholeSeconds ~/ 3600;
+    final resultMinute = (wholeSeconds % 3600) ~/ 60;
+    final resultSecond = wholeSeconds % 60;
+    final base =
+        '${resultHour.toString().padLeft(2, '0')}:'
+        '${resultMinute.toString().padLeft(2, '0')}:'
+        '${resultSecond.toString().padLeft(2, '0')}';
+    if (scale == 0) return base;
+    final resultFraction =
+        remainingTicks.toString().padLeft(7, '0').substring(0, scale);
+    return '$base.$resultFraction';
+  }
+
+  static int _powerOfTen(int exponent) {
+    var result = 1;
+    for (var i = 0; i < exponent; i++) {
+      result *= 10;
+    }
+    return result;
+  }
+
+  static const RegExp _timePattern =
+      RegExp(r'^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.(\d{1,7}))?$');
+
+  static final RegExp _guidPattern = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
+  static Never _fail(String code, String message) {
+    throw SqlTypeException(code, message);
+  }
+}
+
+class _DecimalParts {
+  final bool negative;
+  final String integer;
+  final String fraction;
+
+  const _DecimalParts({
+    required this.negative,
+    required this.integer,
+    required this.fraction,
+  });
+}
+,
+      caseSensitive: false,
+    ).firstMatch(text);
+
+    var dateText = text;
+    var offsetMinutes = 0;
+    if (zoneMatch != null) {
+      dateText = zoneMatch.group(1)!;
+      if (zoneMatch.group(2)!.toUpperCase() != 'Z') {
+        final hours = int.parse(zoneMatch.group(4)!);
+        final minutes = int.parse(zoneMatch.group(5)!);
+        if (minutes > 59 || hours > 14 || hours == 14 && minutes != 0) {
+          _fail(
+            'SSS-TYPE-DATETIMEOFFSET',
+            'DATETIMEOFFSET offset must be between -14:00 and +14:00.',
+          );
+        }
+        final sign = zoneMatch.group(3) == '-' ? -1 : 1;
+        offsetMinutes = sign * (hours * 60 + minutes);
+      }
+    }
+
+    final parsed = DateTime.tryParse(dateText);
+    if (parsed == null) {
+      _fail(
+        'SSS-TYPE-DATETIMEOFFSET',
+        'Value must be an ISO-8601 date/time with an optional Z or ±HH:mm offset.',
+      );
+    }
+
+    // Store the written wall-clock components separately from the offset.
+    final wallClock = DateTime(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+      parsed.millisecond,
+      parsed.microsecond,
+    );
+    return SqlDateTimeOffset(
+      wallClock,
+      offsetMinutes: offsetMinutes,
+      scale: scale,
     );
   }
 
@@ -699,9 +884,9 @@ class SqlTypeSystem {
     final resultMinute = (wholeSeconds % 3600) ~/ 60;
     final resultSecond = wholeSeconds % 60;
     final base =
-        '\${resultHour.toString().padLeft(2, '0')}:'
-        '\${resultMinute.toString().padLeft(2, '0')}:'
-        '\${resultSecond.toString().padLeft(2, '0')}';
+        '${resultHour.toString().padLeft(2, '0')}:'
+        '${resultMinute.toString().padLeft(2, '0')}:'
+        '${resultSecond.toString().padLeft(2, '0')}';
     if (scale == 0) return base;
     final resultFraction =
         remainingTicks.toString().padLeft(7, '0').substring(0, scale);
