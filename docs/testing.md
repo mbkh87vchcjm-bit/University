@@ -50,7 +50,7 @@ These tests use sqflite_common_ffi and a temporary SQLite database file on the C
 
 ## 3. Required CI quality gates
 
-Every Phase 1 revision must pass:
+Every phase revision must pass:
 
 - flutter pub get
 - dart format . (CI normalizes Dart source in its checkout before analysis, tests, and APK builds.)
@@ -62,7 +62,21 @@ Every Phase 1 revision must pass:
 
 A green analyzer alone is not a successful phase. Both test workflows and the APK build workflow must pass on the current branch head.
 
-## 4. Phase 1 acceptance checks
+## 4. Phase 2 acceptance evidence
+
+The Phase 2 branch acceptance run completed on commit `532da4358e5ceb3222dca70951f93d5124790010`:
+
+- Flutter static analysis passed.
+- All 65 reported unit/widget test cases passed.
+- Android debug APK build passed.
+- Android release APK build passed.
+- Release artifact `sql-student-studio-release-apk` was uploaded by GitHub Actions.
+
+Phase 2 regression coverage includes numeric precedence, strict ISO calendar/time rejection, DATE minimum/maximum boundaries, DATE/TIME/DATETIME rounding and limits, Unicode/code-page behavior, binary conversion, GUID validation, NULL truth tables, and the documented collation subset.
+
+This acceptance applies only to isolated semantic components. It does not claim that SQL statements are parsed or executed, or that student database catalogs and rows are persisted.
+
+## 5. Phase 1 acceptance checks
 
 - New install initializes workspace metadata correctly.
 - An existing v1 workspace migrates to v2 without losing projects.
