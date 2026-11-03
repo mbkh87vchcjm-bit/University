@@ -54,7 +54,7 @@ class _AppShellState extends State<AppShell> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _loadError = 'تعذّر تحميل المشاريع المحفوظة: $error';
+        _loadError = 'تعذّر تحميل المشاريع المحفوظة. تحقق من مساحة التخزين ثم أعد المحاولة.';
       });
     }
   }
