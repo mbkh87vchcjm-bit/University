@@ -1,17 +1,76 @@
-# tabeeb_ashiah
+# SQL Student Studio
 
-A new Flutter project.
+**مختبر تعليمي محلي لتعلّم قواعد البيانات وT-SQL على Android.**
 
-## Getting Started
+SQL Student Studio موجّه لطلاب تقنية المعلومات وعلوم الحاسوب الذين يحتاجون إلى التدريب على مفاهيم قواعد البيانات من الهاتف، دون تثبيت Microsoft SQL Server على الجهاز.
 
-This project is a starting point for a Flutter application.
+> **مهم:** التطبيق يبني محركًا تعليميًا مستقلًا بلغة Dart. ليس Microsoft SQL Server، ولا يشغّل خدمة SQL Server الحقيقية على Android. كل ميزة محاكية ستُعرّف بحدودها واختباراتها.
 
-A few resources to get you started if this is your first Flutter project:
+## حالة التطوير
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+المشروع يُطوّر على مراحل. راجع [خارطة التطوير v2.0](docs/roadmap.md) لمعرفة ترتيب المراحل وبوابات قبولها.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### المنفذ في المرحلة التأسيسية الحالية
+
+- هوية التطبيق وحزمة Android باسم SQL Student Studio.
+- تنقل رئيسي عربي من خمسة أقسام: الرئيسية، قواعد البيانات، محرر SQL، التعلم، والمزيد.
+- إنشاء مشاريع مساحة العمل محليًا.
+- عرض المشاريع المحفوظة وفتحها وتحديث آخر وقت فتح.
+- حذف المشروع بعد تأكيد المستخدم.
+- استعادة آخر مشروع مفتوح من سجل SQLite عند تشغيل التطبيق.
+- اختيار المظهر الفاتح أو الداكن أو حسب الجهاز وحفظ التفضيل محليًا.
+- شاشات توضح بصدق أن مستكشف قواعد البيانات ومحرر T-SQL والأكاديمية لم تُنفّذ بعد.
+
+### أساس محرك SQL الموجود حاليًا
+
+- نماذج أولية لأنواع قيم SQL.
+- معالج دفعات GO.
+- نماذج الجداول والأعمدة والقيود.
+- واجهة تجريدية لتخزين بيانات قواعد الطلاب.
+- نموذج تشخيص أخطاء SQL.
+
+وجود هذه النماذج لا يعني أن تنفيذ CREATE/SELECT/INSERT أو غيرها متاح بعد. انظر [مصفوفة دعم SQL](docs/sql-supported.md).
+
+## التوافق الدراسي
+
+- خط الأساس المستهدف: SQL Server 2014، Compatibility Level 120، لمطابقة بيئة المعمل الجامعي المذكورة.
+- ستُضاف ملفات توافق للإصدارات الأحدث بشكل منفصل وبعد اختبار قواعد كل إصدار.
+- لا تُنفّذ الميزات اللاحقة لإصدار 2014 في ملف التوافق الأساسي.
+- التطبيق يعمل محليًا، وبيانات مساحة العمل منفصلة عن بيانات قواعد الطلاب التي سيُنفذ تخزينها في مرحلة لاحقة.
+
+## بنية المستودع
+
+- `lib/app/`: تكوين التطبيق والثيمات.
+- `lib/core/models/`: نماذج مساحة العمل.
+- `lib/core/storage/`: تخزين بيانات التطبيق المحلية.
+- `lib/features/`: واجهات الرئيسية والتنقل والشاشات.
+- `lib/sql_engine/`: محرك T-SQL المستقل (قيد التطوير).
+- `test/`: اختبارات الوحدة والواجهة.
+- `docs/`: المعمارية، مصفوفة التوافق، الاختبارات، وخطة التطوير.
+
+## التطوير والاختبارات
+
+يتطلب التطوير Flutter SDK المستقر وDart المتوافق مع قيد SDK الموجود في `pubspec.yaml`.
+
+```bash
+flutter pub get
+dart format .
+flutter analyze
+flutter test
+flutter build apk --debug
+flutter build apk --release
+```
+
+يُبنى APK عبر GitHub Actions ويُرفع كـ artifact باسم `sql-student-studio-release-apk`.
+
+## سياسة الجودة
+
+- لا تُعرض ميزة على أنها منفذة قبل نجاح اختبارات الوحدة والتكامل والبناء المرتبطة بها.
+- لا تُخترع أرقام أخطاء Microsoft؛ تستخدم أخطاء المحاكي نطاقًا خاصًا عند عدم وجود تطابق موثق.
+- يجب أن تكون عمليات الكتابة ذرّية: فشل الأمر لا يترك تغييرات جزئية.
+- لا يُحذف عمل الطالب عند التنقل أو ظهور خطأ.
+- لا تُخلط بيانات التطبيق الوصفية مع بيانات قواعد الطلاب.
+
+## خارطة التطوير
+
+راجع [docs/roadmap.md](docs/roadmap.md) للخطة ذات المراحل الخمس عشرة.

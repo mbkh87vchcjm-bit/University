@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.tabeebashiah.app" "\0"
-            VALUE "FileDescription", "tabeeb_ashiah" "\0"
+            VALUE "CompanyName", "com.mohammedalfagih" "\0"
+            VALUE "FileDescription", "sql_student_studio" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "tabeeb_ashiah" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.tabeebashiah.app. All rights reserved." "\0"
-            VALUE "OriginalFilename", "tabeeb_ashiah.exe" "\0"
-            VALUE "ProductName", "tabeeb_ashiah" "\0"
+            VALUE "InternalName", "sql_student_studio" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.mohammedalfagih. All rights reserved." "\0"
+            VALUE "OriginalFilename", "sql_student_studio.exe" "\0"
+            VALUE "ProductName", "sql_student_studio" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
