@@ -117,10 +117,15 @@ class SqlLexer {
     final current = _source[_index];
     if (current == '\r') {
       _index++;
-      if (_peek() == '\n') _index++;
+      if (_peek() == '\n') {
+        _index++;
+        _line++;
+        _column = 1;
+        return '\r\n';
+      }
       _line++;
       _column = 1;
-      return '\n';
+      return '\r';
     }
     if (current == '\n') {
       _index++;
@@ -512,7 +517,7 @@ class SqlLexer {
       while (_isDigit(_peek())) {
         _advance();
       }
-      if (_peek() == '.' && _isDigit(_peek(1))) {
+      if (_peek() == '.') {
         hasFraction = true;
         _advance();
         while (_isDigit(_peek())) {

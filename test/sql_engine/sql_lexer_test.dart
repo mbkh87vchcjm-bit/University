@@ -56,16 +56,18 @@ void main() {
     });
 
     test('recognizes integer, decimal, exponent, and binary literals', () {
-      final tokens = SqlLexer().tokenize('1 12.50 .75 3.2e-4 0xA1B2');
+      final tokens = SqlLexer().tokenize('1 12.50 1. .75 3.2e-4 0xA1B2');
       final values = tokens.where((t) => !t.isEndOfFile).toList();
 
       expect(values.map((t) => t.kind), [
         SqlTokenKind.integerLiteral,
         SqlTokenKind.decimalLiteral,
         SqlTokenKind.decimalLiteral,
+        SqlTokenKind.decimalLiteral,
         SqlTokenKind.approximateNumericLiteral,
         SqlTokenKind.binaryLiteral,
       ]);
+      expect(values[2].lexeme, '1.');
       expect(values.last.value, 'A1B2');
     });
 
@@ -92,6 +94,15 @@ void main() {
       expect(goToken.startLine, 3);
       expect(goToken.batchNumber, 4);
       expect(goToken.startOffset, source.lastIndexOf('GO'));
+    });
+
+    test('preserves CRLF inside decoded multiline string values', () {
+      final tokens = SqlLexer().tokenize("SELECT 'one\r\ntwo'");
+      final token = tokens.firstWhere(
+        (t) => t.kind == SqlTokenKind.stringLiteral,
+      );
+      expect(token.value, 'one\r\ntwo');
+      expect(token.endLine, 2);
     });
 
     test('supports a non-zero source base offset and line', () {

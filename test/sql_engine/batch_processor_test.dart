@@ -82,6 +82,12 @@ SELECT 2;
       expect(batches[0], contains('"GO"'));
     });
 
+    test('allows SQLCMD comments after an isolated GO separator', () {
+      const script = 'SELECT 1;\r\n  GO -- repeat batch boundary\r\nSELECT 2;';
+      final batches = processor.process(script);
+      expect(batches, ['SELECT 1;', 'SELECT 2;']);
+    });
+
     test('supports a positive GO repeat count as metadata', () {
       const script = '''
 PRINT 'repeat';

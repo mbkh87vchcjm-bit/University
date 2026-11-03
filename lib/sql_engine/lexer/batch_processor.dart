@@ -64,15 +64,18 @@ class BatchProcessor {
 
     final allTokens = SqlLexer().tokenize(script);
     final lines = _lineRanges(script);
+    final tokensByLine = <int, List<SqlToken>>{};
+
+    // Index tokens once, avoiding a full-token scan for every source line.
+    for (final token in allTokens) {
+      if (token.isComment || token.isEndOfFile) continue;
+      tokensByLine.putIfAbsent(token.startLine, () => <SqlToken>[]).add(token);
+    }
+
     final delimiters = <_LineRange, int>{};
 
     for (final line in lines) {
-      final lineTokens = allTokens.where((token) {
-        return token.startOffset >= line.start &&
-            token.startOffset < line.contentEnd &&
-            !token.isComment &&
-            !token.isEndOfFile;
-      }).toList();
+      final lineTokens = tokensByLine[line.number] ?? const <SqlToken>[];
 
       if (lineTokens.isEmpty ||
           lineTokens.first.kind != SqlTokenKind.keyword ||
