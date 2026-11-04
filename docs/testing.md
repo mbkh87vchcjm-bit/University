@@ -117,7 +117,7 @@ This acceptance applies only to isolated semantic components. It does not claim 
 - No unrelated coursework, medical logo, or previous product identity remains in the active app identity.
 
 
-## 6. Phase 4 parser tests (expanded implementation)
+## 6. Phase 4 parser tests and acceptance evidence
 
 The parser suite covers:
 
@@ -130,4 +130,12 @@ The parser suite covers:
 - BEGIN/COMMIT/ROLLBACK/SAVE transaction syntax.
 - Negative syntax cases for malformed JOIN, UPDATE, expressions, column lists, unsupported statements, and three-part object names.
 
-These tests establish syntax behavior only. They do not prove object-name binding, type/constraint validation, catalog updates, transaction behavior, or SQL execution. Phase 4 acceptance remains pending until the current-head CI and Android build workflows pass.
+Acceptance on code commit 56184dfdd93184f6c328f5ed4ec6afbd1bab1b4c:
+- Flutter analysis passed; 103 automated tests passed.
+- Android analysis and tests passed.
+- Android Debug APK and Release APK builds passed.
+- Release artifact sql-student-studio-release-apk uploaded (artifact ID 13323482339).
+- Flutter workflow: https://github.com/mbkh87vchcjm-bit/University/actions/runs/41833071408
+- Android workflow: https://github.com/mbkh87vchcjm-bit/University/actions/runs/41833071402
+
+These results establish parser syntax behavior only. They do not prove object-name binding, type/constraint validation, catalog updates, transaction behavior, or SQL execution.

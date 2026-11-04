@@ -215,27 +215,28 @@ Acceptance:
 
 **Goal:** create a structured representation of the supported SQL Server 2014 teaching subset.
 
-**Current status: IN PROGRESS — core statement and relational syntax parser implemented; acceptance pending final CI and review.**
+**Phase 4 acceptance: PASSED** on code commit 56184dfdd93184f6c328f5ed4ec6afbd1bab1b4c.
 
-Implemented on the Phase 4 branch:
+Implemented:
 - Syntax AST with source spans, statement nodes, table/column definitions, constraints, joins, expressions, and transaction-control nodes.
 - Recursive-descent parser for CREATE/DROP DATABASE, USE, basic CREATE/DROP TABLE, INSERT VALUES, UPDATE, DELETE, and SELECT.
 - Table-level PRIMARY KEY, UNIQUE, FOREIGN KEY REFERENCES syntax and inline PRIMARY KEY/UNIQUE syntax.
 - SELECT DISTINCT/TOP, projections, aliases, INNER/LEFT/RIGHT/FULL/CROSS joins, WHERE, GROUP BY, HAVING, and ORDER BY.
 - Pratt expression parsing for arithmetic, comparisons, LIKE, IN, BETWEEN, IS NULL, NOT, AND, OR, variables, literals, and function-call syntax.
 - BEGIN/COMMIT/ROLLBACK/SAVE transaction syntax nodes.
-- Parser source-span options for batch number, original offset, and source line, preserving original script coordinates when the caller supplies the batch metadata.
-- Stable SSS syntax diagnostics and tests covering Arabic strings, type parameters, operator precedence, joins, constraints, transactions, and malformed syntax.
+- Parser source-span options for batch number, original offset, and source line.
+- Stable SSS syntax diagnostics and automated tests for Arabic strings, type parameters, operator precedence, joins, constraints, transactions, and malformed syntax.
 
-Explicitly not implemented in Phase 4:
-- ALTER TABLE, DEFAULT/CHECK constraints, subqueries, EXISTS, UNION, CASE, CAST/CONVERT, OUTPUT, OFFSET/FETCH, full T-SQL grammar, and semantic validation.
-- Name resolution, data type validation, foreign-key consistency checks, constraint enforcement, transaction execution, catalog mutation, or query execution.
+Acceptance evidence:
+- Flutter CI passed static analysis and all 103 tests: https://github.com/mbkh87vchcjm-bit/University/actions/runs/41833071408
+- Android workflow passed analysis, tests, Debug APK, Release APK, and artifact upload: https://github.com/mbkh87vchcjm-bit/University/actions/runs/41833071402
+- Release artifact: sql-student-studio-release-apk (artifact ID 13323482339).
+- Extracted APK SHA-256: 237d66baa18b08413f6c1091605ecd05c2aa05ab108840b4562a9ae9e73775b9.
 
-Acceptance:
-- Parser/AST tests, expression precedence and parentheses tests, join/constraint/transaction syntax tests, and negative tests with exact line/column must pass.
-- Current-head Flutter analysis and all tests must pass.
-- Android debug and release builds and the APK artifact upload must pass.
-- Parser must remain syntax-only and must never execute or mutate data.
+Explicit boundaries:
+- Parser is syntax-only; it performs no name binding, data type or constraint validation, catalog mutation, transaction execution, storage access, or SQL execution.
+- ALTER TABLE, DEFAULT/CHECK constraints, subqueries, EXISTS, UNION, CASE, CAST/CONVERT, OUTPUT, OFFSET/FETCH, and complete SQL Server grammar remain unsupported.
+- Foreign-key consistency, object/function existence, legal type parameters, and assignment compatibility belong to Phase 5.
 
 ### Phase 5 — Semantic Binding, Validation, and Diagnostics
 
