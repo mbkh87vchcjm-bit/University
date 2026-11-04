@@ -64,6 +64,7 @@ class SqlColumnDefinition extends SqlAstNode {
   final bool isNullable;
   final bool isIdentity;
   final bool isPrimaryKey;
+  final bool isUnique;
 
   const SqlColumnDefinition({
     required this.name,
@@ -72,6 +73,7 @@ class SqlColumnDefinition extends SqlAstNode {
     this.isNullable = true,
     this.isIdentity = false,
     this.isPrimaryKey = false,
+    this.isUnique = false,
     super.span,
   });
 }
@@ -79,10 +81,12 @@ class SqlColumnDefinition extends SqlAstNode {
 class CreateTableStatement extends SqlStatement {
   final SqlTableName table;
   final List<SqlColumnDefinition> columns;
+  final List<SqlTableConstraint> constraints;
 
   const CreateTableStatement({
     required this.table,
     required this.columns,
+    this.constraints = const [],
     super.span,
   });
 }
@@ -110,7 +114,10 @@ class SelectStatement extends SqlStatement {
   final int? top;
   final List<SqlSelectItem> items;
   final SqlTableName? from;
+  final List<SqlJoinClause> joins;
   final SqlExpression? where;
+  final List<SqlExpression> groupBy;
+  final SqlExpression? having;
   final List<SqlOrderByItem> orderBy;
 
   const SelectStatement({
@@ -118,7 +125,10 @@ class SelectStatement extends SqlStatement {
     this.top,
     required this.items,
     this.from,
+    this.joins = const [],
     this.where,
+    this.groupBy = const [],
+    this.having,
     this.orderBy = const [],
     super.span,
   });
@@ -234,6 +244,103 @@ class SqlFunctionCallExpression extends SqlExpression {
     this.name,
     this.arguments, {
     this.starArgument = false,
+    super.span,
+  });
+}
+
+enum SqlTableConstraintKind { primaryKey, unique, foreignKey }
+
+class SqlTableConstraint extends SqlAstNode {
+  final String? name;
+  final SqlTableConstraintKind kind;
+  final List<String> columns;
+  final SqlTableName? referencedTable;
+  final List<String> referencedColumns;
+
+  const SqlTableConstraint({
+    this.name,
+    required this.kind,
+    required this.columns,
+    this.referencedTable,
+    this.referencedColumns = const [],
+    super.span,
+  });
+}
+
+enum SqlJoinType { inner, left, right, full, cross }
+
+class SqlJoinClause extends SqlAstNode {
+  final SqlJoinType type;
+  final SqlTableName table;
+  final SqlExpression? condition;
+
+  const SqlJoinClause({
+    required this.type,
+    required this.table,
+    this.condition,
+    super.span,
+  });
+}
+
+class SqlAssignment extends SqlAstNode {
+  final String column;
+  final SqlExpression expression;
+
+  const SqlAssignment({
+    required this.column,
+    required this.expression,
+    super.span,
+  });
+}
+
+class UpdateStatement extends SqlStatement {
+  final SqlTableName table;
+  final List<SqlAssignment> assignments;
+  final SqlExpression? where;
+
+  const UpdateStatement({
+    required this.table,
+    required this.assignments,
+    this.where,
+    super.span,
+  });
+}
+
+class DeleteStatement extends SqlStatement {
+  final SqlTableName table;
+  final SqlExpression? where;
+
+  const DeleteStatement({
+    required this.table,
+    this.where,
+    super.span,
+  });
+}
+
+enum SqlTransactionKind { begin, commit, rollback, save }
+
+class SqlTransactionStatement extends SqlStatement {
+  final SqlTransactionKind kind;
+  final String? savepointName;
+
+  const SqlTransactionStatement({
+    required this.kind,
+    this.savepointName,
+    super.span,
+  });
+}
+
+class SqlBetweenExpression extends SqlExpression {
+  final SqlExpression expression;
+  final SqlExpression lower;
+  final SqlExpression upper;
+  final bool negated;
+
+  const SqlBetweenExpression({
+    required this.expression,
+    required this.lower,
+    required this.upper,
+    this.negated = false,
     super.span,
   });
 }

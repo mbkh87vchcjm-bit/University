@@ -117,15 +117,17 @@ This acceptance applies only to isolated semantic components. It does not claim 
 - No unrelated coursework, medical logo, or previous product identity remains in the active app identity.
 
 
-## 6. Phase 4 parser tests (implementation increment)
+## 6. Phase 4 parser tests (expanded implementation)
 
-The parser test suite currently covers:
+The parser suite covers:
 
-- Multiple semicolon-separated database statements and AST source spans.
-- CREATE TABLE column declarations, parameterized data types, NULL/NOT NULL, IDENTITY, and inline PRIMARY KEY.
-- INSERT with optional target columns, multiple VALUES rows, and decoded Arabic Unicode strings.
-- SELECT DISTINCT/TOP, projection aliases, schema-qualified FROM, table aliases, WHERE, and ORDER BY.
-- Arithmetic and boolean precedence, parentheses, NOT binding, IS [NOT] NULL, NOT IN, LIKE, wildcard selection, and COUNT(*).
-- Negative syntax cases with exact line/column diagnostics, unsupported statements, incomplete expressions, malformed column lists, and rejected three-part object names.
+- Multiple statements, original script source offsets/line numbers, and GO batch number propagation.
+- CREATE/DROP DATABASE, USE, CREATE/DROP TABLE, parameterized types, NULL/NOT NULL, IDENTITY, inline keys, and named table PRIMARY KEY/UNIQUE/FOREIGN KEY REFERENCES syntax.
+- INSERT with optional column lists, multiple VALUES rows, and decoded Arabic Unicode strings.
+- UPDATE assignments and DELETE predicates.
+- SELECT DISTINCT/TOP, projection aliases, qualified FROM, table aliases, INNER/LEFT/RIGHT/FULL/CROSS JOIN, ON predicates, WHERE, GROUP BY, HAVING, and ORDER BY.
+- Arithmetic/boolean precedence, parentheses, NOT binding, IS [NOT] NULL, IN/NOT IN, BETWEEN/NOT BETWEEN, wildcard selection, and function-call syntax including reserved-word function names.
+- BEGIN/COMMIT/ROLLBACK/SAVE transaction syntax.
+- Negative syntax cases for malformed JOIN, UPDATE, expressions, column lists, unsupported statements, and three-part object names.
 
-These tests establish parser syntax behavior only. They do not prove name binding, type validation, catalog updates, or SQL execution. Phase 4 acceptance remains pending until the branch's current-head CI and Android builds pass and the planned grammar increment is reviewed.
+These tests establish syntax behavior only. They do not prove object-name binding, type/constraint validation, catalog updates, transaction behavior, or SQL execution. Phase 4 acceptance remains pending until the current-head CI and Android build workflows pass.

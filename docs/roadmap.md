@@ -215,25 +215,27 @@ Acceptance:
 
 **Goal:** create a structured representation of the supported SQL Server 2014 teaching subset.
 
-**Current status: IN PROGRESS — parser foundation implemented on the Phase 4 branch.**
+**Current status: IN PROGRESS — core statement and relational syntax parser implemented; acceptance pending final CI and review.**
 
-Implemented in this increment:
-- Added a syntax AST with source spans, statement nodes, table/column syntax nodes, literal/identifier/function nodes, and expression nodes.
-- Added a recursive-descent parser for CREATE/DROP DATABASE, USE, basic CREATE/DROP TABLE, INSERT ... VALUES, and a limited SELECT form.
-- Added a Pratt expression parser with arithmetic, comparisons, LIKE, IN, IS NULL, NOT, AND, and OR precedence.
-- Added syntax-only parser diagnostics using SSS-specific error codes and source line/column.
-- Added tests for Arabic Unicode literals, source spans, aliases, type parameters, expression precedence, and malformed syntax.
-- Kept parsing separate from semantic binding, database storage, and execution.
+Implemented on the Phase 4 branch:
+- Syntax AST with source spans, statement nodes, table/column definitions, constraints, joins, expressions, and transaction-control nodes.
+- Recursive-descent parser for CREATE/DROP DATABASE, USE, basic CREATE/DROP TABLE, INSERT VALUES, UPDATE, DELETE, and SELECT.
+- Table-level PRIMARY KEY, UNIQUE, FOREIGN KEY REFERENCES syntax and inline PRIMARY KEY/UNIQUE syntax.
+- SELECT DISTINCT/TOP, projections, aliases, INNER/LEFT/RIGHT/FULL/CROSS joins, WHERE, GROUP BY, HAVING, and ORDER BY.
+- Pratt expression parsing for arithmetic, comparisons, LIKE, IN, BETWEEN, IS NULL, NOT, AND, OR, variables, literals, and function-call syntax.
+- BEGIN/COMMIT/ROLLBACK/SAVE transaction syntax nodes.
+- Parser source-span options for batch number, original offset, and source line, preserving original script coordinates when the caller supplies the batch metadata.
+- Stable SSS syntax diagnostics and tests covering Arabic strings, type parameters, operator precedence, joins, constraints, transactions, and malformed syntax.
 
-Not yet implemented in this increment:
-- Joins, GROUP BY, HAVING, subqueries, UNION, UPDATE, DELETE, ALTER TABLE, transaction syntax, table-level constraints, DEFAULT/CHECK/FOREIGN KEY constraints, three-part object names, and full SQL Server grammar.
-- Semantic validation of type parameters, object names, column counts, or data compatibility.
-- AST execution or catalog mutation.
+Explicitly not implemented in Phase 4:
+- ALTER TABLE, DEFAULT/CHECK constraints, subqueries, EXISTS, UNION, CASE, CAST/CONVERT, OUTPUT, OFFSET/FETCH, full T-SQL grammar, and semantic validation.
+- Name resolution, data type validation, foreign-key consistency checks, constraint enforcement, transaction execution, catalog mutation, or query execution.
 
 Acceptance:
-- Parser/AST tests, expression precedence and parenthesis tests, and negative syntax tests with exact line/column must pass.
-- Current-head Flutter analysis, all tests, Android debug build, and Android release build must pass.
-- The parser must remain syntax-only and must never execute or mutate data.
+- Parser/AST tests, expression precedence and parentheses tests, join/constraint/transaction syntax tests, and negative tests with exact line/column must pass.
+- Current-head Flutter analysis and all tests must pass.
+- Android debug and release builds and the APK artifact upload must pass.
+- Parser must remain syntax-only and must never execute or mutate data.
 
 ### Phase 5 — Semantic Binding, Validation, and Diagnostics
 

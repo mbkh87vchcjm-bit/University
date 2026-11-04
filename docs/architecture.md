@@ -38,7 +38,7 @@ Local Workspace
   App metadata store | Student database catalog and row store
 ```
 
-Phase 1 delivers the Flutter shell and workspace project metadata. Phase 2 adds isolated pure-Dart foundations for SQL type descriptors and conversion, SQL three-valued logic, and a deliberately limited collation profile. Phase 3 adds a source-aware lexer and GO batch handling. Phase 4 now adds a syntax-only parser and AST for a deliberately limited T-SQL subset. The parser is not connected to semantic binding, execution, or a persisted student database catalog.
+Phase 1 delivers the Flutter shell and workspace project metadata. Phase 2 adds isolated pure-Dart foundations for SQL type descriptors and conversion, SQL three-valued logic, and a deliberately limited collation profile. Phase 3 adds a source-aware lexer and GO batch handling. Phase 4 adds a syntax-only parser and AST for a documented T-SQL subset, including DML, joins, grouping, predicates, constraints, and transaction syntax. The parser is not connected to semantic binding, execution, or a persisted student database catalog.
 
 ## Storage separation
 

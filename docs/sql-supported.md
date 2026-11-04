@@ -21,16 +21,16 @@ The current application can manage local learning workspace projects. The SQL ty
 |---|---|---|
 | GO batch separation | **Partial** | Lexer-aware isolated GO lines and positive repeat-count metadata are supported. The repeat count is recorded, not executed; malformed repeat syntax and a trailing multi-line block comment are rejected. |
 | T-SQL lexer (documented subset) | **Partial** | Source-aware tokens are implemented for the documented lexical subset; this is not the complete T-SQL lexical grammar. |
-| Parser and AST | Partial | Syntax-only AST parsing is implemented for documented database/table DDL, INSERT, and SELECT forms; it does not bind or execute statements. |
+| Parser and AST | Partial | Syntax-only AST parsing covers database/table DDL, INSERT/UPDATE/DELETE, SELECT with joins/grouping, predicates, constraints, and transaction syntax; no binding or execution. |
 | Semantic binding | Planned | Database, schema, table, column, type, and function name resolution is not implemented. |
 | CREATE DATABASE, DROP DATABASE, USE | Partial | Syntax is parsed into AST nodes only; no catalog mutation or execution. |
-| CREATE TABLE, DROP TABLE | Partial | Basic table/column syntax is parsed into AST nodes; ALTER TABLE and table-level constraints are not supported; no execution. |
-| INSERT, SELECT | Partial | Basic INSERT VALUES and SELECT projection/FROM/WHERE/ORDER BY syntax is parsed into AST nodes; no query execution. UPDATE and DELETE remain planned. |
+| CREATE TABLE, DROP TABLE | Partial | Basic columns, type parameters, nullability, identity, inline PK/UNIQUE, and table-level PK/UNIQUE/FK REFERENCES are parsed; ALTER TABLE/DEFAULT/CHECK and execution are not supported. |
+| INSERT, SELECT, UPDATE, DELETE | Partial | INSERT VALUES, UPDATE SET, DELETE, and SELECT projection/join/WHERE/GROUP BY/HAVING/ORDER BY syntax parse to AST; no query execution. |
 | WHERE, comparisons, AND, OR, NOT, LIKE, IN, BETWEEN | Planned | Logical value helpers exist, but SQL expressions are not parsed or evaluated. |
 | ORDER BY, DISTINCT, TOP | Planned | Not executable yet. |
 | PRIMARY KEY, FOREIGN KEY, UNIQUE, DEFAULT, CHECK enforcement | Planned | Model classes exist; constraint validation is not connected to execution. |
 | Joins and aggregates | Planned | No join or aggregate executor exists yet. |
-| Transactions | Planned | Atomic SQL statement execution and transaction state are future work. |
+| Transactions | Partial | BEGIN/COMMIT/ROLLBACK/SAVE syntax parses to AST only; transaction state, savepoint behavior, and atomic execution are not implemented. |
 | Views, procedures, triggers | Planned / staged | These are not part of the current phase 2 implementation. |
 
 ## Type-system foundation

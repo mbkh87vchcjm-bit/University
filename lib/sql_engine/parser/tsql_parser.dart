@@ -9,8 +9,19 @@ class TsqlParser {
   final List<SqlToken> _tokens;
   int _current = 0;
 
-  TsqlParser(String source)
-      : _tokens = SqlLexer(includeComments: false).tokenize(source);
+  TsqlParser(
+    String source, {
+    int batchNumber = 1,
+    int startOffset = 0,
+    int startLine = 1,
+    int startColumn = 1,
+  }) : _tokens = SqlLexer(
+          includeComments: false,
+          batchNumber: batchNumber,
+          startOffset: startOffset,
+          startLine: startLine,
+          startColumn: startColumn,
+        ).tokenize(source);
 
   List<SqlStatement> parse() {
     final statements = <SqlStatement>[];
@@ -54,75 +65,141 @@ class TsqlParser {
       return UseDatabaseStatement(name.value, span: _spanFrom(start));
     }
     if (_matchKeyword('INSERT')) { return _parseInsert(_previous); }
+    if (_matchKeyword('UPDATE')) { return _parseUpdate(_previous); }
+    if (_matchKeyword('DELETE')) { return _parseDelete(_previous); }
     if (_matchKeyword('SELECT')) { return _parseSelect(_previous); }
+    if (_matchKeyword('BEGIN')) { return _parseTransaction(_previous, SqlTransactionKind.begin); }
+    if (_matchKeyword('COMMIT')) { return _parseTransaction(_previous, SqlTransactionKind.commit); }
+    if (_matchKeyword('ROLLBACK')) { return _parseTransaction(_previous, SqlTransactionKind.rollback); }
+    if (_matchKeyword('SAVE')) { return _parseSaveTransaction(_previous); }
     _fail('Statement is not supported by this parser phase.');
   }
 
   CreateTableStatement _parseCreateTable(SqlToken start) {
     final table = _parseTableName();
-    _consumePunctuation('(', 'Expected "(" before the table column list.');
+    _consumePunctuation('(', 'Expected "(" before the table element list.');
     final columns = <SqlColumnDefinition>[];
+    final constraints = <SqlTableConstraint>[];
+
     do {
-      final columnStart = _peek;
-      final name = _consumeIdentifier('column name');
-      final type = _consumeTypeName();
-      final arguments = <String>[];
-      if (_matchPunctuation('(')) {
-        do {
-          final parameter = _peek;
-          if (parameter.kind == SqlTokenKind.integerLiteral ||
-              parameter.kind == SqlTokenKind.identifier ||
-              parameter.kind == SqlTokenKind.keyword) {
-            arguments.add(_advance().lexeme.toUpperCase());
-          } else {
-            _fail('Expected a type parameter such as a number or MAX.');
-          }
-        } while (_matchPunctuation(','));
-        _consumePunctuation(')', 'Expected ")" after type parameters.');
+      final elementStart = _peek;
+      String? constraintName;
+      if (_matchKeyword('CONSTRAINT')) {
+        constraintName = _consumeIdentifier('constraint name').value;
       }
 
-      var nullable = true;
-      var identity = false;
-      var primaryKey = false;
-      var readingModifiers = true;
-      while (readingModifiers) {
-        if (_matchKeyword('NOT')) {
-          _consumeKeyword('NULL', 'Expected NULL after NOT.');
-          nullable = false;
-        } else if (_matchKeyword('NULL')) {
-          nullable = true;
-        } else if (_matchKeyword('IDENTITY')) {
-          identity = true;
-          if (_matchPunctuation('(')) {
-            _consumeIntegerLiteral('IDENTITY seed');
-            _consumePunctuation(',', 'Expected comma between IDENTITY seed and increment.');
-            _consumeIntegerLiteral('IDENTITY increment');
-            _consumePunctuation(')', 'Expected ")" after IDENTITY arguments.');
-          }
-        } else if (_matchKeyword('PRIMARY')) {
-          _consumeKeyword('KEY', 'Expected KEY after PRIMARY.');
-          primaryKey = true;
-          nullable = false;
-        } else {
-          readingModifiers = false;
+      if (_matchKeyword('PRIMARY')) {
+        _consumeKeyword('KEY', 'Expected KEY after PRIMARY.');
+        final names = _parseIdentifierList('primary-key column');
+        constraints.add(SqlTableConstraint(
+          name: constraintName,
+          kind: SqlTableConstraintKind.primaryKey,
+          columns: List.unmodifiable(names),
+          span: _spanFrom(elementStart),
+        ));
+      } else if (_matchKeyword('UNIQUE')) {
+        final names = _parseIdentifierList('unique-key column');
+        constraints.add(SqlTableConstraint(
+          name: constraintName,
+          kind: SqlTableConstraintKind.unique,
+          columns: List.unmodifiable(names),
+          span: _spanFrom(elementStart),
+        ));
+      } else if (_matchKeyword('FOREIGN')) {
+        _consumeKeyword('KEY', 'Expected KEY after FOREIGN.');
+        final names = _parseIdentifierList('foreign-key column');
+        _consumeKeyword('REFERENCES', 'Expected REFERENCES after FOREIGN KEY columns.');
+        final referencedTable = _parseTableName();
+        final referencedColumns = _parseIdentifierList('referenced column');
+        constraints.add(SqlTableConstraint(
+          name: constraintName,
+          kind: SqlTableConstraintKind.foreignKey,
+          columns: List.unmodifiable(names),
+          referencedTable: referencedTable,
+          referencedColumns: List.unmodifiable(referencedColumns),
+          span: _spanFrom(elementStart),
+        ));
+      } else {
+        if (constraintName != null) {
+          _fail('CONSTRAINT must be followed by PRIMARY KEY, UNIQUE, or FOREIGN KEY.');
         }
+        final columnName = _consumeIdentifier('column name');
+        final type = _consumeTypeName();
+        final arguments = <String>[];
+        if (_matchPunctuation('(')) {
+          do {
+            final parameter = _peek;
+            if (parameter.kind == SqlTokenKind.integerLiteral ||
+                parameter.kind == SqlTokenKind.identifier ||
+                parameter.kind == SqlTokenKind.keyword) {
+              arguments.add(_advance().lexeme.toUpperCase());
+            } else {
+              _fail('Expected a type parameter such as a number or MAX.');
+            }
+          } while (_matchPunctuation(','));
+          _consumePunctuation(')', 'Expected ")" after type parameters.');
+        }
+
+        var nullable = true;
+        var identity = false;
+        var primaryKey = false;
+        var unique = false;
+        var readingModifiers = true;
+        while (readingModifiers) {
+          if (_matchKeyword('NOT')) {
+            _consumeKeyword('NULL', 'Expected NULL after NOT.');
+            nullable = false;
+          } else if (_matchKeyword('NULL')) {
+            nullable = true;
+          } else if (_matchKeyword('IDENTITY')) {
+            identity = true;
+            if (_matchPunctuation('(')) {
+              _consumeIntegerLiteral('IDENTITY seed');
+              _consumePunctuation(',', 'Expected comma between IDENTITY seed and increment.');
+              _consumeIntegerLiteral('IDENTITY increment');
+              _consumePunctuation(')', 'Expected ")" after IDENTITY arguments.');
+            }
+          } else if (_matchKeyword('PRIMARY')) {
+            _consumeKeyword('KEY', 'Expected KEY after PRIMARY.');
+            primaryKey = true;
+            nullable = false;
+          } else if (_matchKeyword('UNIQUE')) {
+            unique = true;
+          } else {
+            readingModifiers = false;
+          }
+        }
+
+        columns.add(SqlColumnDefinition(
+          name: columnName.value,
+          typeName: type,
+          typeArguments: List.unmodifiable(arguments),
+          isNullable: nullable,
+          isIdentity: identity,
+          isPrimaryKey: primaryKey,
+          isUnique: unique,
+          span: _spanFrom(elementStart),
+        ));
       }
-      columns.add(SqlColumnDefinition(
-        name: name.value,
-        typeName: type,
-        typeArguments: List.unmodifiable(arguments),
-        isNullable: nullable,
-        isIdentity: identity,
-        isPrimaryKey: primaryKey,
-        span: _spanFrom(columnStart),
-      ));
     } while (_matchPunctuation(','));
-    _consumePunctuation(')', 'Expected ")" after the table column list.');
+
+    _consumePunctuation(')', 'Expected ")" after the table element list.');
     return CreateTableStatement(
       table: table,
       columns: List.unmodifiable(columns),
+      constraints: List.unmodifiable(constraints),
       span: _spanFrom(start),
     );
+  }
+
+  List<String> _parseIdentifierList(String description) {
+    _consumePunctuation('(', 'Expected "(" before $description list.');
+    final names = <String>[];
+    do {
+      names.add(_consumeIdentifier(description).value);
+    } while (_matchPunctuation(','));
+    _consumePunctuation(')', 'Expected ")" after $description list.');
+    return names;
   }
 
   InsertStatement _parseInsert(SqlToken start) {
@@ -157,6 +234,130 @@ class TsqlParser {
     );
   }
 
+  UpdateStatement _parseUpdate(SqlToken start) {
+    final table = _parseTableName();
+    _consumeKeyword('SET', 'Expected SET after UPDATE target.');
+    final assignments = <SqlAssignment>[];
+    do {
+      final assignmentStart = _peek;
+      final column = _consumeIdentifier('column to update');
+      if (!_matchOperator('=')) {
+        _fail('Expected "=" in UPDATE assignment.');
+      }
+      final expression = _parseExpression();
+      assignments.add(SqlAssignment(
+        column: column.value,
+        expression: expression,
+        span: _spanFrom(assignmentStart),
+      ));
+    } while (_matchPunctuation(','));
+
+    SqlExpression? where;
+    if (_matchKeyword('WHERE')) { where = _parseExpression(); }
+    return UpdateStatement(
+      table: table,
+      assignments: List.unmodifiable(assignments),
+      where: where,
+      span: _spanFrom(start),
+    );
+  }
+
+  DeleteStatement _parseDelete(SqlToken start) {
+    _matchKeyword('FROM');
+    final table = _parseTableName();
+    SqlExpression? where;
+    if (_matchKeyword('WHERE')) { where = _parseExpression(); }
+    return DeleteStatement(
+      table: table,
+      where: where,
+      span: _spanFrom(start),
+    );
+  }
+
+  SqlTransactionStatement _parseTransaction(
+    SqlToken start,
+    SqlTransactionKind kind,
+  ) {
+    if (!_matchKeyword('TRANSACTION')) { _matchKeyword('TRAN'); }
+    String? savepointName;
+    if (kind == SqlTransactionKind.rollback && _isIdentifierToken(_peek)) {
+      savepointName = _advance().value;
+    }
+    return SqlTransactionStatement(
+      kind: kind,
+      savepointName: savepointName,
+      span: _spanFrom(start),
+    );
+  }
+
+  SqlTransactionStatement _parseSaveTransaction(SqlToken start) {
+    if (!_matchKeyword('TRANSACTION')) { _matchKeyword('TRAN'); }
+    final name = _consumeIdentifier('savepoint name');
+    return SqlTransactionStatement(
+      kind: SqlTransactionKind.save,
+      savepointName: name.value,
+      span: _spanFrom(start),
+    );
+  }
+
+  SqlTableName _parseTableWithAlias() {
+    final table = _parseTableName();
+    String? alias;
+    if (_matchKeyword('AS')) { alias = _consumeIdentifier('table alias').value; }
+    if (alias == null) { return table; }
+    return SqlTableName(
+      schema: table.schema,
+      name: table.name,
+      alias: alias,
+      span: table.span,
+    );
+  }
+
+  SqlJoinClause? _tryParseJoin() {
+    final start = _peek;
+    SqlJoinType? type;
+    if (_matchKeyword('JOIN')) {
+      type = SqlJoinType.inner;
+    } else if (_matchKeyword('INNER')) {
+      _consumeKeyword('JOIN', 'Expected JOIN after INNER.');
+      type = SqlJoinType.inner;
+    } else if (_matchKeyword('LEFT')) {
+      _matchKeyword('OUTER');
+      _consumeKeyword('JOIN', 'Expected JOIN after LEFT [OUTER].');
+      type = SqlJoinType.left;
+    } else if (_matchKeyword('RIGHT')) {
+      _matchKeyword('OUTER');
+      _consumeKeyword('JOIN', 'Expected JOIN after RIGHT [OUTER].');
+      type = SqlJoinType.right;
+    } else if (_matchKeyword('FULL')) {
+      _matchKeyword('OUTER');
+      _consumeKeyword('JOIN', 'Expected JOIN after FULL [OUTER].');
+      type = SqlJoinType.full;
+    } else if (_matchKeyword('CROSS')) {
+      _consumeKeyword('JOIN', 'Expected JOIN after CROSS.');
+      type = SqlJoinType.cross;
+    } else {
+      return null;
+    }
+
+    final table = _parseTableWithAlias();
+    SqlExpression? condition;
+    if (type == SqlJoinType.cross) {
+      if (_matchKeyword('ON')) {
+        _fail('CROSS JOIN does not accept an ON predicate in this parser subset.');
+      }
+    } else {
+      _consumeKeyword('ON', 'Expected ON after joined table.');
+      condition = _parseExpression();
+    }
+    return SqlJoinClause(
+      type: type,
+      table: table,
+      condition: condition,
+      span: _spanFrom(start),
+    );
+  }
+
   SelectStatement _parseSelect(SqlToken start) {
     final distinct = _matchKeyword('DISTINCT');
     int? top;
@@ -181,22 +382,29 @@ class TsqlParser {
     } while (_matchPunctuation(','));
 
     SqlTableName? from;
+    final joins = <SqlJoinClause>[];
     if (_matchKeyword('FROM')) {
-      from = _parseTableName();
-      String? alias;
-      if (_matchKeyword('AS')) { alias = _consumeIdentifier('table alias').value; }
-      if (alias != null) {
-        from = SqlTableName(
-          schema: from.schema,
-          name: from.name,
-          alias: alias,
-          span: from.span,
-        );
+      from = _parseTableWithAlias();
+      while (true) {
+        final join = _tryParseJoin();
+        if (join == null) { break; }
+        joins.add(join);
       }
     }
 
     SqlExpression? where;
     if (_matchKeyword('WHERE')) { where = _parseExpression(); }
+
+    final groupBy = <SqlExpression>[];
+    if (_matchKeyword('GROUP')) {
+      _consumeKeyword('BY', 'Expected BY after GROUP.');
+      do {
+        groupBy.add(_parseExpression());
+      } while (_matchPunctuation(','));
+    }
+
+    SqlExpression? having;
+    if (_matchKeyword('HAVING')) { having = _parseExpression(); }
 
     final orderBy = <SqlOrderByItem>[];
     if (_matchKeyword('ORDER')) {
@@ -219,7 +427,10 @@ class TsqlParser {
       top: top,
       items: List.unmodifiable(items),
       from: from,
+      joins: List.unmodifiable(joins),
       where: where,
+      groupBy: List.unmodifiable(groupBy),
+      having: having,
       orderBy: List.unmodifiable(orderBy),
       span: _spanFrom(start),
     );
@@ -278,11 +489,28 @@ class TsqlParser {
 
       var negatedPredicate = false;
       if (_checkKeyword('NOT') &&
-          (_checkKeywordAt(1, 'IN') || _checkKeywordAt(1, 'LIKE'))) {
+          (_checkKeywordAt(1, 'IN') ||
+           _checkKeywordAt(1, 'LIKE') ||
+           _checkKeywordAt(1, 'BETWEEN'))) {
         if (3 < minimumPrecedence) { break; }
         _advance();
         negatedPredicate = true;
       }
+      if (_checkKeyword('BETWEEN')) {
+        _advance();
+        final lower = _parseExpression(4);
+        _consumeKeyword('AND', 'Expected AND between BETWEEN bounds.');
+        final upper = _parseExpression(4);
+        left = SqlBetweenExpression(
+          expression: left,
+          lower: lower,
+          upper: upper,
+          negated: negatedPredicate,
+          span: _spanFrom(start),
+        );
+        continue;
+      }
+
       if (_checkKeyword('IN') || _checkKeyword('LIKE')) {
         final predicate = _advance().lexeme.toUpperCase();
         if (predicate == 'IN') {
@@ -389,7 +617,7 @@ class TsqlParser {
         span: _spanFrom(operator),
       );
     }
-    if (_isIdentifierToken(token)) {
+    if (_isIdentifierOrFunctionToken(token)) {
       final start = token;
       final parts = <String>[_advance().value];
       while (_matchPunctuation('.')) {
@@ -453,6 +681,15 @@ class TsqlParser {
       case '%': return 5;
       default: return 0;
     }
+  }
+
+  bool _isIdentifierOrFunctionToken(SqlToken token) {
+    if (_isIdentifierToken(token)) { return true; }
+    final nextIndex = _current + 1;
+    return token.kind == SqlTokenKind.keyword &&
+        nextIndex < _tokens.length &&
+        _tokens[nextIndex].kind == SqlTokenKind.punctuation &&
+        _tokens[nextIndex].lexeme == '(';
   }
 
   bool _isIdentifierToken(SqlToken token) =>
