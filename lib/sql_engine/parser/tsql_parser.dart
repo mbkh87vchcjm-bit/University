@@ -16,7 +16,7 @@ class TsqlParser {
     final statements = <SqlStatement>[];
     while (!_isAtEnd) {
       while (_matchPunctuation(';')) {}
-      if (_isAtEnd) break;
+      if (_isAtEnd) { break; }
       statements.add(_parseStatement());
       if (_matchPunctuation(';')) {
         while (_matchPunctuation(';')) {}
@@ -34,7 +34,7 @@ class TsqlParser {
         final name = _consumeIdentifier('database name');
         return CreateDatabaseStatement(name.value, span: _spanFrom(start));
       }
-      if (_matchKeyword('TABLE')) return _parseCreateTable(start);
+      if (_matchKeyword('TABLE')) { return _parseCreateTable(start); }
       _fail('Expected DATABASE or TABLE after CREATE.');
     }
     if (_matchKeyword('DROP')) {
@@ -53,8 +53,8 @@ class TsqlParser {
       final name = _consumeIdentifier('database name');
       return UseDatabaseStatement(name.value, span: _spanFrom(start));
     }
-    if (_matchKeyword('INSERT')) return _parseInsert(_previous);
-    if (_matchKeyword('SELECT')) return _parseSelect(_previous);
+    if (_matchKeyword('INSERT')) { return _parseInsert(_previous); }
+    if (_matchKeyword('SELECT')) { return _parseSelect(_previous); }
     _fail('Statement is not supported by this parser phase.');
   }
 
@@ -146,7 +146,7 @@ class TsqlParser {
         } while (_matchPunctuation(','));
       }
       _consumePunctuation(')', 'Expected ")" after a VALUES row.');
-      if (row.isEmpty) _fail('A VALUES row cannot be empty.');
+      if (row.isEmpty) { _fail('A VALUES row cannot be empty.'); }
       rows.add(List.unmodifiable(row));
     } while (_matchPunctuation(','));
     return InsertStatement(
@@ -164,7 +164,7 @@ class TsqlParser {
       _consumePunctuation('(', 'Expected "(" after TOP in this parser subset.');
       top = _consumeIntegerLiteral('TOP row count');
       _consumePunctuation(')', 'Expected ")" after TOP row count.');
-      if (top < 0) _fail('TOP row count cannot be negative.');
+      if (top < 0) { _fail('TOP row count cannot be negative.'); }
     }
 
     final items = <SqlSelectItem>[];
@@ -172,7 +172,7 @@ class TsqlParser {
       final itemStart = _peek;
       final expression = _parseExpression();
       String? alias;
-      if (_matchKeyword('AS')) alias = _consumeIdentifier('SELECT alias').value;
+      if (_matchKeyword('AS')) { alias = _consumeIdentifier('SELECT alias').value; }
       items.add(SqlSelectItem(
         expression: expression,
         alias: alias,
@@ -184,7 +184,7 @@ class TsqlParser {
     if (_matchKeyword('FROM')) {
       from = _parseTableName();
       String? alias;
-      if (_matchKeyword('AS')) alias = _consumeIdentifier('table alias').value;
+      if (_matchKeyword('AS')) { alias = _consumeIdentifier('table alias').value; }
       if (alias != null) {
         from = SqlTableName(
           schema: from.schema,
@@ -196,7 +196,7 @@ class TsqlParser {
     }
 
     SqlExpression? where;
-    if (_matchKeyword('WHERE')) where = _parseExpression();
+    if (_matchKeyword('WHERE')) { where = _parseExpression(); }
 
     final orderBy = <SqlOrderByItem>[];
     if (_matchKeyword('ORDER')) {
@@ -205,7 +205,7 @@ class TsqlParser {
         final itemStart = _peek;
         final expression = _parseExpression();
         final ascending = !_matchKeyword('DESC');
-        if (ascending) _matchKeyword('ASC');
+        if (ascending) { _matchKeyword('ASC'); }
         orderBy.add(SqlOrderByItem(
           expression: expression,
           ascending: ascending,
@@ -258,7 +258,7 @@ class TsqlParser {
     }
     _advance();
     final value = int.tryParse(token.lexeme);
-    if (value == null) _fail('Invalid integer for $description.');
+    if (value == null) { _fail('Invalid integer for $description.'); }
     return value;
   }
 
@@ -268,7 +268,7 @@ class TsqlParser {
     while (!_isAtEnd) {
       if (_checkKeyword('IS')) {
         const precedence = 3;
-        if (precedence < minimumPrecedence) break;
+        if (precedence < minimumPrecedence) { break; }
         _advance();
         final negated = _matchKeyword('NOT');
         _consumeKeyword('NULL', 'Expected NULL after IS or IS NOT.');
@@ -279,7 +279,7 @@ class TsqlParser {
       var negatedPredicate = false;
       if (_checkKeyword('NOT') &&
           (_checkKeywordAt(1, 'IN') || _checkKeywordAt(1, 'LIKE'))) {
-        if (3 < minimumPrecedence) break;
+        if (3 < minimumPrecedence) { break; }
         _advance();
         negatedPredicate = true;
       }
@@ -288,7 +288,7 @@ class TsqlParser {
         if (predicate == 'IN') {
           _consumePunctuation('(', 'Expected "(" after IN.');
           final values = <SqlExpression>[];
-          if (_checkPunctuation(')')) _fail('IN requires at least one expression.');
+          if (_checkPunctuation(')')) { _fail('IN requires at least one expression.'); }
           do {
             values.add(_parseExpression());
           } while (_matchPunctuation(','));
@@ -314,9 +314,9 @@ class TsqlParser {
       }
 
       final operator = _binaryOperator(_peek);
-      if (operator == null) break;
+      if (operator == null) { break; }
       final precedence = _precedence(operator);
-      if (precedence < minimumPrecedence) break;
+      if (precedence < minimumPrecedence) { break; }
       _advance();
       final right = _parseExpression(precedence + 1);
       left = SqlBinaryExpression(
@@ -425,12 +425,12 @@ class TsqlParser {
   String? _binaryOperator(SqlToken token) {
     if (token.kind == SqlTokenKind.operator) {
       final value = token.lexeme;
-      if (const {'=', '!=', '<>', '<', '>', '<=', '>='}.contains(value)) return value;
-      if (const {'+', '-', '*', '/', '%'}.contains(value)) return value;
+      if (const {'=', '!=', '<>', '<', '>', '<=', '>='}.contains(value)) { return value; }
+      if (const {'+', '-', '*', '/', '%'}.contains(value)) { return value; }
     }
     if (token.kind == SqlTokenKind.keyword) {
       final value = token.lexeme.toUpperCase();
-      if (value == 'AND' || value == 'OR') return value;
+      if (value == 'AND' || value == 'OR') { return value; }
     }
     return null;
   }
@@ -461,7 +461,7 @@ class TsqlParser {
       token.kind == SqlTokenKind.quotedIdentifier;
 
   bool _matchKeyword(String keyword) {
-    if (!_checkKeyword(keyword)) return false;
+    if (!_checkKeyword(keyword)) { return false; }
     _advance();
     return true;
   }
@@ -473,18 +473,18 @@ class TsqlParser {
 
   bool _checkKeywordAt(int distance, String keyword) {
     final position = _current + distance;
-    if (position >= _tokens.length) return false;
+    if (position >= _tokens.length) { return false; }
     final token = _tokens[position];
     return token.kind == SqlTokenKind.keyword &&
         token.lexeme.toUpperCase() == keyword;
   }
 
   void _consumeKeyword(String keyword, String message) {
-    if (!_matchKeyword(keyword)) _fail(message);
+    if (!_matchKeyword(keyword)) { _fail(message); }
   }
 
   bool _matchPunctuation(String punctuation) {
-    if (!_checkPunctuation(punctuation)) return false;
+    if (!_checkPunctuation(punctuation)) { return false; }
     _advance();
     return true;
   }
@@ -495,11 +495,11 @@ class TsqlParser {
       _peek.lexeme == punctuation;
 
   void _consumePunctuation(String punctuation, String message) {
-    if (!_matchPunctuation(punctuation)) _fail(message);
+    if (!_matchPunctuation(punctuation)) { _fail(message); }
   }
 
   bool _matchOperator(String operator) {
-    if (!_checkOperator(operator)) return false;
+    if (!_checkOperator(operator)) { return false; }
     _advance();
     return true;
   }
@@ -510,7 +510,7 @@ class TsqlParser {
       _peek.lexeme == operator;
 
   SqlToken _consumeIdentifier(String description) {
-    if (!_isIdentifierToken(_peek)) _fail('Expected $description.');
+    if (!_isIdentifierToken(_peek)) { _fail('Expected $description.'); }
     return _advance();
   }
 
@@ -519,7 +519,7 @@ class TsqlParser {
   bool get _isAtEnd => _peek.kind == SqlTokenKind.eof;
 
   SqlToken _advance() {
-    if (!_isAtEnd) _current++;
+    if (!_isAtEnd) { _current++; }
     return _previous;
   }
 
