@@ -34,19 +34,23 @@ These tests use sqflite_common_ffi and a temporary SQLite database file on the C
 - Student can open a project and delete it only after confirmation.
 - Theme selection updates the application preference through the repository interface.
 
-### SQL foundation tests
+### SQL foundation and phase 2 tests
 
 - BatchProcessor splits isolated GO separators with case-insensitive handling.
 - It ignores GO in quoted strings and comments.
 - It handles empty batches and CRLF line endings.
 - SqlValue literal formatting and basic equality are tested.
-- TableModel row ID allocation and foreign-key column-count validation are tested.
+- TableModel row ID allocation, foreign-key column-count validation, and optional column type metadata are tested.
+- SqlTypeSpec validates parameter ranges for DECIMAL/NUMERIC, FLOAT, CHAR/VARCHAR, NCHAR/NVARCHAR, BINARY/VARBINARY, TIME, DATETIME2, and DATETIMEOFFSET.
+- SqlTypeSystem tests integer boundaries, exact decimal rounding/overflow, MONEY/SMALLMONEY bounds, FLOAT/REAL finite values, BIT conversion, string length/code-page behavior, Unicode UTF-16 length, binary hex conversion/padding, date ranges, temporal rounding, GUID validation, and rejection of direct ROWVERSION assignment.
+- SqlTruthValue tests the full NOT/AND/OR three-valued truth tables and the TRUE-only WHERE filter rule.
+- SqlCollation tests case/accent profile behavior and the documented Arabic combining-mark subset.
 
-**Important:** SQL foundation tests do not indicate that complete T-SQL parsing, type conversion, SQL Server collation, DDL, or DML execution is implemented. Those are covered by later phases.
+**Important:** These are component-level foundations. They do not indicate that a complete T-SQL lexer/parser, SQL Server collation engine, CREATE/ALTER/DROP, INSERT/SELECT/UPDATE/DELETE, constraints, transactions, or persisted student database is implemented.
 
 ## 3. Required CI quality gates
 
-Every Phase 1 revision must pass:
+Every phase revision must pass:
 
 - flutter pub get
 - dart format . (CI normalizes Dart source in its checkout before analysis, tests, and APK builds.)
@@ -58,7 +62,21 @@ Every Phase 1 revision must pass:
 
 A green analyzer alone is not a successful phase. Both test workflows and the APK build workflow must pass on the current branch head.
 
-## 4. Phase 1 acceptance checks
+## 4. Phase 2 acceptance evidence
+
+The Phase 2 branch acceptance run completed on commit `532da4358e5ceb3222dca70951f93d5124790010`:
+
+- Flutter static analysis passed.
+- All 65 reported unit/widget test cases passed.
+- Android debug APK build passed.
+- Android release APK build passed.
+- Release artifact `sql-student-studio-release-apk` was uploaded by GitHub Actions.
+
+Phase 2 regression coverage includes numeric precedence, strict ISO calendar/time rejection, DATE minimum/maximum boundaries, DATE/TIME/DATETIME rounding and limits, Unicode/code-page behavior, binary conversion, GUID validation, NULL truth tables, and the documented collation subset.
+
+This acceptance applies only to isolated semantic components. It does not claim that SQL statements are parsed or executed, or that student database catalogs and rows are persisted.
+
+## 5. Phase 1 acceptance checks
 
 - New install initializes workspace metadata correctly.
 - An existing v1 workspace migrates to v2 without losing projects.

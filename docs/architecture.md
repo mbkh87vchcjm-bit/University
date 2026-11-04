@@ -38,7 +38,7 @@ Local Workspace
   App metadata store | Student database catalog and row store
 ```
 
-Only the Flutter shell and workspace project metadata storage are implemented in the current Phase 1 work. The later engine stages in this diagram are target architecture, not currently available functionality.
+Phase 1 delivers the Flutter shell and workspace project metadata. Phase 2 adds isolated pure-Dart foundations for SQL type descriptors and conversion, SQL three-valued logic, and a deliberately limited collation profile. These modules are unit-tested independently but are not yet wired into a parser, semantic binder, SQL executor, or persisted student database catalog. The later engine stages in this diagram remain target architecture.
 
 ## Storage separation
 
