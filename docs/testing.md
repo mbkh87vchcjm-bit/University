@@ -115,3 +115,27 @@ This acceptance applies only to isolated semantic components. It does not claim 
 - Student-visible storage errors are actionable and do not expose internal exception details.
 - Android package identity and app label use SQL Student Studio.
 - No unrelated coursework, medical logo, or previous product identity remains in the active app identity.
+
+
+## 6. Phase 4 parser tests and acceptance evidence
+
+The parser suite covers:
+
+- Multiple statements, original script source offsets/line numbers, and GO batch number propagation.
+- CREATE/DROP DATABASE, USE, CREATE/DROP TABLE, parameterized types, NULL/NOT NULL, IDENTITY, inline keys, and named table PRIMARY KEY/UNIQUE/FOREIGN KEY REFERENCES syntax.
+- INSERT with optional column lists, multiple VALUES rows, and decoded Arabic Unicode strings.
+- UPDATE assignments and DELETE predicates.
+- SELECT DISTINCT/TOP, projection aliases, qualified FROM, table aliases, INNER/LEFT/RIGHT/FULL/CROSS JOIN, ON predicates, WHERE, GROUP BY, HAVING, and ORDER BY.
+- Arithmetic/boolean precedence, parentheses, NOT binding, IS [NOT] NULL, IN/NOT IN, BETWEEN/NOT BETWEEN, wildcard selection, and function-call syntax including reserved-word function names.
+- BEGIN/COMMIT/ROLLBACK/SAVE transaction syntax.
+- Negative syntax cases for malformed JOIN, UPDATE, expressions, column lists, unsupported statements, and three-part object names.
+
+Acceptance on code commit 56184dfdd93184f6c328f5ed4ec6afbd1bab1b4c:
+- Flutter analysis passed; 103 automated tests passed.
+- Android analysis and tests passed.
+- Android Debug APK and Release APK builds passed.
+- Release artifact sql-student-studio-release-apk uploaded (artifact ID 13323482339).
+- Flutter workflow: https://github.com/mbkh87vchcjm-bit/University/actions/runs/41833071408
+- Android workflow: https://github.com/mbkh87vchcjm-bit/University/actions/runs/41833071402
+
+These results establish parser syntax behavior only. They do not prove object-name binding, type/constraint validation, catalog updates, transaction behavior, or SQL execution.

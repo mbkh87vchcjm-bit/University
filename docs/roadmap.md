@@ -213,21 +213,30 @@ Acceptance:
 
 ### Phase 4 — Parser and AST
 
-**Goal:** create a structured representation of supported T-SQL.
+**Goal:** create a structured representation of the supported SQL Server 2014 teaching subset.
 
-Work:
-- Build a recursive-descent statement parser and Pratt expression parser.
-- Add AST nodes for supported DDL, DML, joins, predicates, expressions, constraints, and transaction statements.
-- Preserve source spans on AST nodes.
-- Implement operator precedence and parentheses correctly.
-- Separate parse errors from semantic errors.
-- Define a documented grammar subset for the 2014 profile.
+**Phase 4 acceptance: PASSED** on code commit 56184dfdd93184f6c328f5ed4ec6afbd1bab1b4c.
 
-Acceptance:
-- Golden AST tests.
-- Precedence and parenthesis tests.
-- Negative syntax tests with exact line/column.
-- The parser never executes or mutates data.
+Implemented:
+- Syntax AST with source spans, statement nodes, table/column definitions, constraints, joins, expressions, and transaction-control nodes.
+- Recursive-descent parser for CREATE/DROP DATABASE, USE, basic CREATE/DROP TABLE, INSERT VALUES, UPDATE, DELETE, and SELECT.
+- Table-level PRIMARY KEY, UNIQUE, FOREIGN KEY REFERENCES syntax and inline PRIMARY KEY/UNIQUE syntax.
+- SELECT DISTINCT/TOP, projections, aliases, INNER/LEFT/RIGHT/FULL/CROSS joins, WHERE, GROUP BY, HAVING, and ORDER BY.
+- Pratt expression parsing for arithmetic, comparisons, LIKE, IN, BETWEEN, IS NULL, NOT, AND, OR, variables, literals, and function-call syntax.
+- BEGIN/COMMIT/ROLLBACK/SAVE transaction syntax nodes.
+- Parser source-span options for batch number, original offset, and source line.
+- Stable SSS syntax diagnostics and automated tests for Arabic strings, type parameters, operator precedence, joins, constraints, transactions, and malformed syntax.
+
+Acceptance evidence:
+- Flutter CI passed static analysis and all 103 tests: https://github.com/mbkh87vchcjm-bit/University/actions/runs/41833071408
+- Android workflow passed analysis, tests, Debug APK, Release APK, and artifact upload: https://github.com/mbkh87vchcjm-bit/University/actions/runs/41833071402
+- Release artifact: sql-student-studio-release-apk (artifact ID 13323482339).
+- Extracted APK SHA-256: 237d66baa18b08413f6c1091605ecd05c2aa05ab108840b4562a9ae9e73775b9.
+
+Explicit boundaries:
+- Parser is syntax-only; it performs no name binding, data type or constraint validation, catalog mutation, transaction execution, storage access, or SQL execution.
+- ALTER TABLE, DEFAULT/CHECK constraints, subqueries, EXISTS, UNION, CASE, CAST/CONVERT, OUTPUT, OFFSET/FETCH, and complete SQL Server grammar remain unsupported.
+- Foreign-key consistency, object/function existence, legal type parameters, and assignment compatibility belong to Phase 5.
 
 ### Phase 5 — Semantic Binding, Validation, and Diagnostics
 

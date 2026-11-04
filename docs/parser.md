@@ -1,239 +1,77 @@
-# Lexer, Parser & AST Pipeline Specification
+# T-SQL Parser and AST
 
-## Overview
-The SQL Engine parses T-SQL code through a multi-stage execution pipeline:
+## Pipeline
 
-```
-Raw SQL Script String
-       │
-       ▼
-Batch Processor (Pre-lexer split by isolated GO directives)
-       │
-       ▼
-Lexer / Tokenizer (Tokens, Literals, Identifiers, Escaped Strings)
-       │
-       ▼
-Parser (Recursive Descent Parser + Pratt Expression Parser)
-       │
-       ▼
-Abstract Syntax Tree (AST)
-       │
-       ▼
-Semantic Validator & Schema Verification
-       │
-       ▼
-Executor & Storage Abstraction Engine
-```
+SQL script
+  -> lexer-aware GO batch processor
+  -> SQL lexer
+  -> recursive-descent statement parser
+  -> Pratt expression parser
+  -> AST
+  -> later phases: binder, validator, executor, storage
 
----
+GO splitting is handled by the batch processor. TsqlParser parses one batch and accepts batchNumber, startOffset, startLine, and startColumn so AST spans can refer to the original script. It does not split GO or execute repeated batches.
 
-## 1. Batch Processor (`GO` Separator)
-The Batch Processor operates before the Lexer:
-- Case-insensitive matching for isolated `GO` tokens (`GO`, `go`, `Go`).
-- Strips leading/trailing whitespace around batch delimiters.
-- **Strict String & Comment Exclusion**: `GO` appearing inside string literals (`SELECT 'GO';`) or inside line/block comments (`-- GO` or `/* GO */`) is treated as literal content and is **never** used as a batch separator.
-- Handles empty batches and multiple consecutive `GO` statements gracefully without crashing or generating illegal AST nodes.
-- Returns an ordered list of executable SQL batch strings.
+## Parser contract
 
----
+- Pure Dart. No Flutter dependency, storage access, database mutation, or SQL execution.
+- Returns an immutable list of syntax-tree statements.
+- AST nodes retain source spans: zero-based UTF-16 offsets, one-based line/column positions, and the batch number.
+- Syntax diagnostics use SSS-PARSE-SYNTAX and ErrorCategory.parserError.
+- Lexical failures remain SqlLexException; they are not reclassified as parser errors.
+- Supports semicolon-separated statements and an optional final semicolon.
+- The parser is case-insensitive for keywords but retains identifier spelling in AST nodes.
 
-## 2. Lexer & Identifiers (`lib/sql_engine/lexer/`)
+## Implemented grammar subset
 
-### Case Insensitivity Rules
-- All SQL keywords, functions, and object identifiers (`Students`, `students`, `STUDENTS`) are **case-insensitive** during resolution, while preserving original casing for display purposes.
+### Statements
 
-### Identifier Resolution Rules
-- Supports single-part identifiers (`Students`) resolving to default schema `dbo` (`dbo.Students`).
-- Supports two-part schema identifiers (`dbo.Students`).
-- Supports bracketed identifiers (`[Student Name]`).
-- Three-part database identifiers (`University.dbo.Students`) are deferred to post-v1.0.
+- CREATE DATABASE identifier, DROP DATABASE identifier, USE identifier
+- CREATE TABLE [schema.]table (...), DROP TABLE [schema.]table
+- Column declarations with type parameters, NULL / NOT NULL, IDENTITY(seed, increment), inline PRIMARY KEY, and inline UNIQUE.
+- Table-level named or unnamed PRIMARY KEY (...), UNIQUE (...), and FOREIGN KEY (...) REFERENCES [schema.]table (...) declarations.
+- INSERT [INTO] [schema.]table [(column, ...)] VALUES (...), (...)
+- UPDATE [schema.]table SET column = expression [, ...] [WHERE expression]
+- DELETE [FROM] [schema.]table [WHERE expression]
+- SELECT [DISTINCT] [TOP (integer)] select_item, ... [FROM table [AS alias] join_clause ...] [WHERE expression] [GROUP BY expression, ...] [HAVING expression] [ORDER BY expression [ASC|DESC], ...]
+- BEGIN [TRANSACTION|TRAN], COMMIT [TRANSACTION|TRAN], ROLLBACK [TRANSACTION|TRAN] [savepoint], and SAVE [TRANSACTION|TRAN] savepoint.
 
-### String Escaping & Literals
-- T-SQL single quote escaping (`'Ali''s'`) resolves to string value `Ali's`.
-- Keyword `NULL` tokenizes to `SqlValue.nullValue()`.
+Supported join forms: JOIN, INNER JOIN, LEFT [OUTER] JOIN, RIGHT [OUTER] JOIN, FULL [OUTER] JOIN, and CROSS JOIN. Non-cross joins require an ON expression; CROSS JOIN rejects ON.
 
----
+Identifiers may be regular, bracketed, or quoted identifiers as emitted by the lexer. Two-part schema-qualified names are supported. Three-part database.schema.table names are rejected.
 
-## 3. Parser Architecture (`lib/sql_engine/parser/`)
-- **Statements**: Parsed using **Recursive Descent Parser**.
-- **Expressions**: Parsed using **Pratt Expression Parser** to handle operator precedence (`()`, `NOT`, `*`, `/`, `+`, `-`, comparison, `LIKE`, `IN`, `BETWEEN`, `IS NULL`, `AND`, `OR`).
+### Expressions
 
-### LIKE Pattern Semantics
-- `%`: Matches zero or more arbitrary characters.
-- `_`: Matches exactly one single character.
+The Pratt parser supports:
+- Integer, decimal, approximate numeric, binary, string, Unicode string, and NULL literals.
+- Identifiers, qualified identifiers, local variables, wildcard *, and function-call syntax. Keyword tokens followed by ( are accepted as function names, including aggregate names such as SUM.
+- Parentheses and unary +, - and NOT.
+- Multiplication, division, modulo, addition, and subtraction.
+- Equality and relational comparisons.
+- LIKE, NOT LIKE, IN, NOT IN, BETWEEN, NOT BETWEEN, IS NULL, and IS NOT NULL.
+- Boolean AND and OR.
 
-### Table & Column References
-```dart
-class TableReference {
-  final String schema;
-  final String table;
-  final String? alias;
+Precedence, from lowest to highest:
 
-  const TableReference({
-    this.schema = 'dbo',
-    required this.table,
-    this.alias,
-  });
-}
+1. OR
+2. AND
+3. Comparisons, LIKE, IN, BETWEEN, and IS [NOT] NULL
+4. + and -
+5. *, /, and %
+6. Unary + and -. NOT is a predicate-prefix operator: it consumes the following comparison predicate and stops before AND or OR.
 
-class ColumnReference {
-  final String? schema;
-  final String? table;
-  final String columnName;
+## AST and semantics boundary
 
-  const ColumnReference({
-    this.schema,
-    this.table,
-    required this.columnName,
-  });
-}
-```
+The AST is defined in lib/sql_engine/ast/sql_ast.dart; parsing is implemented in lib/sql_engine/parser/tsql_parser.dart.
 
-### Complete AST Statement Nodes (Dart)
-```dart
-sealed class SqlStatement {
-  const SqlStatement();
-}
+AST nodes cover syntax for database/table statements, INSERT/UPDATE/DELETE/SELECT, joins, group/having/order clauses, table constraints, transaction statements, literals, identifiers, variables, functions, and predicates.
 
-class CreateDatabaseStatement extends SqlStatement {
-  final String dbName;
-  const CreateDatabaseStatement(this.dbName);
-}
+A parsed table constraint or data type is only syntax. The parser does not check whether referenced tables or columns exist, whether foreign-key column counts match, whether precision/scale is legal, or whether values match declared data types. Those checks belong to Phase 5 semantic binding/validation.
 
-class UseDatabaseStatement extends SqlStatement {
-  final String dbName;
-  const UseDatabaseStatement(this.dbName);
-}
+Transaction nodes describe transaction statements only. They do not start, commit, or roll back an actual transaction.
 
-class DropDatabaseStatement extends SqlStatement {
-  final String dbName;
-  const DropDatabaseStatement(this.dbName);
-}
+## Deliberate exclusions
 
-class CreateTableStatement extends SqlStatement {
-  final TableReference tableRef;
-  final List<ColumnModel> columns;
-  final List<ConstraintModel> constraints;
+Not yet accepted: ALTER TABLE, DEFAULT and CHECK constraints, subqueries, EXISTS, UNION, CASE, CAST / CONVERT, OUTPUT, OFFSET/FETCH, table-valued functions, PIVOT, APPLY, stored procedures, and full SQL Server grammar. Expression functions are parsed by name only; function existence and argument signatures are not validated here.
 
-  const CreateTableStatement({
-    required this.tableRef,
-    required this.columns,
-    this.constraints = const [],
-  });
-}
-
-class DropTableStatement extends SqlStatement {
-  final TableReference tableRef;
-  const DropTableStatement(this.tableRef);
-}
-
-class InsertStatement extends SqlStatement {
-  final TableReference tableRef;
-  final List<String> columns;
-  final List<List<Expression>> valuesList;
-
-  const InsertStatement({
-    required this.tableRef,
-    this.columns = const [],
-    required this.valuesList,
-  });
-}
-
-class SelectStatement extends SqlStatement {
-  final bool isDistinct;
-  final int? top;
-  final List<SelectColumn> columns;
-  final TableReference? fromTable;
-  final List<JoinClause> joins;
-  final Expression? whereClause;
-  final List<Expression> groupBy;
-  final Expression? having;
-  final List<OrderByClause> orderBy;
-
-  const SelectStatement({
-    this.isDistinct = false,
-    this.top,
-    required this.columns,
-    this.fromTable,
-    this.joins = const [],
-    this.whereClause,
-    this.groupBy = const [],
-    this.having,
-    this.orderBy = const [],
-  });
-}
-
-class UpdateStatement extends SqlStatement {
-  final TableReference tableRef;
-  final Map<String, Expression> assignments;
-  final Expression? whereClause;
-
-  const UpdateStatement({
-    required this.tableRef,
-    required this.assignments,
-    this.whereClause,
-  });
-}
-
-class DeleteStatement extends SqlStatement {
-  final TableReference tableRef;
-  final Expression? whereClause;
-
-  const DeleteStatement({
-    required this.tableRef,
-    this.whereClause,
-  });
-}
-```
-
----
-
-## 4. Specific Syntax Rules
-
-### `DECIMAL(p, s)` Semantics
-- In MVP, precision `p` and scale `s` must be specified explicitly (e.g., `DECIMAL(10, 2)`). Omitting parameters is rejected by the Parser in initial phases.
-
-### `TOP (N)` Syntax
-- MVP supports explicit parenthesized `TOP (N)` syntax (e.g., `SELECT TOP (5) * FROM Students`).
-
----
-
-## 5. Error Diagnostic System (`SqlError`)
-Structured diagnostic errors provide exact positioning and actionable feedback:
-
-```dart
-enum ErrorCategory {
-  lexerError,
-  parserError,
-  semanticError,
-  typeError,
-  constraintError,
-  executionError,
-  storageError,
-}
-
-class SqlError implements Exception {
-  final String code;
-  final ErrorCategory category;
-  final String message;
-  final int line;
-  final int column;
-  final String? suggestion;
-
-  const SqlError({
-    required this.code,
-    required this.category,
-    required this.message,
-    required this.line,
-    required this.column,
-    this.suggestion,
-  });
-}
-```
-
-Example Output:
-```
-❌ SQL001: PARSERERROR
-Line 1, Column 10: Incorrect syntax near 'FORM'.
-Suggestion: Did you mean 'FROM'?
-```
+A successfully parsed statement is a syntax tree only. It is not proof that object names, constraints, functions, or data types exist, and it cannot be run against a student database yet.
