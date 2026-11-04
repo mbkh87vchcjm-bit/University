@@ -21,11 +21,11 @@ The current application can manage local learning workspace projects. The SQL ty
 |---|---|---|
 | GO batch separation | **Partial** | Lexer-aware isolated GO lines and positive repeat-count metadata are supported. The repeat count is recorded, not executed; malformed repeat syntax and a trailing multi-line block comment are rejected. |
 | T-SQL lexer (documented subset) | **Partial** | Source-aware tokens are implemented for the documented lexical subset; this is not the complete T-SQL lexical grammar. |
-| Parser and AST | Planned | SQL statements are not parsed into executable syntax trees yet. |
+| Parser and AST | Partial | Syntax-only AST parsing is implemented for documented database/table DDL, INSERT, and SELECT forms; it does not bind or execute statements. |
 | Semantic binding | Planned | Database, schema, table, column, type, and function name resolution is not implemented. |
-| CREATE DATABASE, DROP DATABASE, USE | Planned | Not executable yet. |
-| CREATE TABLE, ALTER TABLE, DROP TABLE | Planned | Not executable yet. |
-| INSERT, SELECT, UPDATE, DELETE | Planned | Not executable yet. |
+| CREATE DATABASE, DROP DATABASE, USE | Partial | Syntax is parsed into AST nodes only; no catalog mutation or execution. |
+| CREATE TABLE, DROP TABLE | Partial | Basic table/column syntax is parsed into AST nodes; ALTER TABLE and table-level constraints are not supported; no execution. |
+| INSERT, SELECT | Partial | Basic INSERT VALUES and SELECT projection/FROM/WHERE/ORDER BY syntax is parsed into AST nodes; no query execution. UPDATE and DELETE remain planned. |
 | WHERE, comparisons, AND, OR, NOT, LIKE, IN, BETWEEN | Planned | Logical value helpers exist, but SQL expressions are not parsed or evaluated. |
 | ORDER BY, DISTINCT, TOP | Planned | Not executable yet. |
 | PRIMARY KEY, FOREIGN KEY, UNIQUE, DEFAULT, CHECK enforcement | Planned | Model classes exist; constraint validation is not connected to execution. |

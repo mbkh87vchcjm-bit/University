@@ -213,21 +213,27 @@ Acceptance:
 
 ### Phase 4 — Parser and AST
 
-**Goal:** create a structured representation of supported T-SQL.
+**Goal:** create a structured representation of the supported SQL Server 2014 teaching subset.
 
-Work:
-- Build a recursive-descent statement parser and Pratt expression parser.
-- Add AST nodes for supported DDL, DML, joins, predicates, expressions, constraints, and transaction statements.
-- Preserve source spans on AST nodes.
-- Implement operator precedence and parentheses correctly.
-- Separate parse errors from semantic errors.
-- Define a documented grammar subset for the 2014 profile.
+**Current status: IN PROGRESS — parser foundation implemented on the Phase 4 branch.**
+
+Implemented in this increment:
+- Added a syntax AST with source spans, statement nodes, table/column syntax nodes, literal/identifier/function nodes, and expression nodes.
+- Added a recursive-descent parser for CREATE/DROP DATABASE, USE, basic CREATE/DROP TABLE, INSERT ... VALUES, and a limited SELECT form.
+- Added a Pratt expression parser with arithmetic, comparisons, LIKE, IN, IS NULL, NOT, AND, and OR precedence.
+- Added syntax-only parser diagnostics using SSS-specific error codes and source line/column.
+- Added tests for Arabic Unicode literals, source spans, aliases, type parameters, expression precedence, and malformed syntax.
+- Kept parsing separate from semantic binding, database storage, and execution.
+
+Not yet implemented in this increment:
+- Joins, GROUP BY, HAVING, subqueries, UNION, UPDATE, DELETE, ALTER TABLE, transaction syntax, table-level constraints, DEFAULT/CHECK/FOREIGN KEY constraints, three-part object names, and full SQL Server grammar.
+- Semantic validation of type parameters, object names, column counts, or data compatibility.
+- AST execution or catalog mutation.
 
 Acceptance:
-- Golden AST tests.
-- Precedence and parenthesis tests.
-- Negative syntax tests with exact line/column.
-- The parser never executes or mutates data.
+- Parser/AST tests, expression precedence and parenthesis tests, and negative syntax tests with exact line/column must pass.
+- Current-head Flutter analysis, all tests, Android debug build, and Android release build must pass.
+- The parser must remain syntax-only and must never execute or mutate data.
 
 ### Phase 5 — Semantic Binding, Validation, and Diagnostics
 

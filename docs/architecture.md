@@ -38,7 +38,7 @@ Local Workspace
   App metadata store | Student database catalog and row store
 ```
 
-Phase 1 delivers the Flutter shell and workspace project metadata. Phase 2 adds isolated pure-Dart foundations for SQL type descriptors and conversion, SQL three-valued logic, and a deliberately limited collation profile. These modules are unit-tested independently but are not yet wired into a parser, semantic binder, SQL executor, or persisted student database catalog. The later engine stages in this diagram remain target architecture.
+Phase 1 delivers the Flutter shell and workspace project metadata. Phase 2 adds isolated pure-Dart foundations for SQL type descriptors and conversion, SQL three-valued logic, and a deliberately limited collation profile. Phase 3 adds a source-aware lexer and GO batch handling. Phase 4 now adds a syntax-only parser and AST for a deliberately limited T-SQL subset. The parser is not connected to semantic binding, execution, or a persisted student database catalog.
 
 ## Storage separation
 
@@ -65,13 +65,15 @@ lib/
     navigation/        # five-destination app shell
   sql_engine/
     errors/            # structured SQL diagnostic model
+    ast/               # syntax-tree node model
     lexer/             # token model, T-SQL scanner, and GO batch processor
+    parser/            # recursive-descent statements and Pratt expressions
     models/            # database/table/constraint models
     storage/           # student database storage interface
     types/             # SQL value hierarchy
 test/
   core/                # workspace model tests
-  sql_engine/          # SQL foundation tests
+  sql_engine/          # SQL lexer, parser, type, and foundation tests
   widget_test.dart     # application workflow tests
 ```
 
