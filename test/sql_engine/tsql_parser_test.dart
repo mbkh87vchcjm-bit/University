@@ -264,9 +264,9 @@ void main() {
       );
     });
 
-    test('rejects unsupported statements without pretending to execute', () {
+    test('rejects statements that remain outside the parser subset', () {
       expect(
-        () => TsqlParser("UPDATE Students SET Name = N'Ali';").parse(),
+        () => TsqlParser('ALTER TABLE Students ADD Age INT;').parse(),
         throwsA(isA<SqlError>()),
       );
     });
