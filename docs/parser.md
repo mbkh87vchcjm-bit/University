@@ -53,7 +53,7 @@ The implemented precedence, from lowest to highest, is:
 3. Comparisons, LIKE, IN, and IS [NOT] NULL
 4. + and -
 5. *, /, and %
-6. Unary +, - and NOT. NOT binds to a comparison expression, as required for SQL boolean predicates.
+6. Unary + and -. NOT is a predicate-prefix operator: it consumes the following comparison expression and stops before AND or OR.
 
 ## AST model
 

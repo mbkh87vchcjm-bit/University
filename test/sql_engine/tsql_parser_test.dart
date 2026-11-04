@@ -94,6 +94,20 @@ void main() {
       expect(notExpression.operand, isA<SqlBinaryExpression>());
     });
 
+    test('preserves variable prefixes in variable AST nodes', () {
+      final statement = TsqlParser(
+        'SELECT @studentId, @@ROWCOUNT;',
+      ).parse().single as SelectStatement;
+      expect(
+        (statement.items[0].expression as SqlVariableExpression).name,
+        '@studentId',
+      );
+      expect(
+        (statement.items[1].expression as SqlVariableExpression).name,
+        '@@ROWCOUNT',
+      );
+    });
+
     test('parses IS NULL, NOT IN, wildcard and function calls', () {
       final statement = TsqlParser(
         'SELECT COUNT(*) FROM Students '

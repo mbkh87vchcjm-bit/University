@@ -369,7 +369,7 @@ class TsqlParser {
     }
     if (token.kind == SqlTokenKind.variable) {
       _advance();
-      return SqlVariableExpression(token.value, span: _spanFrom(token));
+      return SqlVariableExpression(token.lexeme, span: _spanFrom(token));
     }
     if (_matchOperator('*')) {
       return SqlWildcardExpression(span: _spanFrom(_previous));
